@@ -1,0 +1,11 @@
+country,date,retail_recreation,grocery_pharmacy,parks,transit_stations,workplaces,residential
+US,3/29/20,-47,-22,-19,-51,-38,12
+UK,3/29/20,-85,-46,-52,-75,-55,15
+Netherlands,3/29/20,-65,-29,-30,-68,-35,11
+Italy,3/29/20,-94,-85,-90,-87,-63,24
+Turkey,3/29/20,-75,-39,-58,-71,-45,17
+Spain,3/29/20,-94,-76,-89,-88,-64,22
+South Korea,3/29/20,-19,11,51,-17,-12,6
+France,3/29/20,-88,-72,-82,-87,-56,18
+Germany,3/29/20,-77,-51,-49,-68,-39,11
+Switzerland,3/29/20,-81,-51,-41,-68,-46,15

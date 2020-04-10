@@ -1,4 +1,6 @@
 # EDA script
+library(hrbrthemes)
+library(gcookbook)
 library(tidyverse)
 library(ggrepel)
 
@@ -10,7 +12,7 @@ is_outlier <- function(x) {
 }
 
 USStates %>%
-  pivot_longer(cols = c("retail_recreation",	"grocery_pharmacy",	"parks",	
+  pivot_longer(cols = c("retail_recreation", "grocery_pharmacy", "parks",	
                         "transit_stations",	"workplaces",	"residential"),
                names_to = "type") %>%
   group_by(type) %>%
@@ -23,13 +25,14 @@ USStates %>%
   geom_boxplot(aes(x = reorder(type, -value), y = value/100)) +
   geom_text_repel(aes(x = reorder(type, -value), y = value/100,
                       label = ifelse(!is.na(outlier), paste0(state, ": ", outlier, "%"), ""),
-                      color = high_low), size = 3, fontface = "bold") +
+                      color = high_low), size = 3, fontface = "bold", family = hrbrthemes::font_an) +
   scale_x_discrete(labels = c("Residential", "Parks", "Grocery/Pharmacy", "Workplaces", "Retail/Recreation", "Transit Stations")) +
   scale_y_continuous(labels = scales::percent) +
   scale_color_manual(values = c("red", "blue")) +
+  theme_ipsum() +
   guides(color = F) +
   labs(title = "United States Mobility Trends",
        subtitle = paste0("as of ", USStates$date),
        x = NULL,
-       y = "%Change in Mobility",
+       y = "%Change in Mobility Compared to Baseline",
        caption = "Data courtesy of Google")
