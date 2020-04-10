@@ -13,6 +13,8 @@ library(usethis)
 library(usmap)
 library(sf)
 library(lubridate)
+library(gganimate)
+library(gifski)
 ```
 
 ```{r}
@@ -164,16 +166,62 @@ state_covid_dead %>%
 
 state_covid_confirmed <- state_covid_confirmed %>% 
   mutate(per_100k = (sum(`4/8/20`)/population)*100000) %>% 
-  arrange(desc(per_100k))
+  arrange(desc(per_100k)) %>% 
+  ungroup()
 
 state_covid_dead <- state_covid_dead %>% 
   mutate(per_100k = (sum(`4/8/20`)/population)*100000) %>% 
-  arrange(desc(per_100k))
+  arrange(desc(per_100k)) %>% 
+  ungroup()
 ```
 
+```{r}
+state_covid_confirmed %>% 
+  t() %>% 
+  as.data.frame()
+```
+
+## Starting Fresh 
 
 ```{r}
-plot_usmap(data = state_covid_confirmed, values = "1/24/20", labels = TRUE, alpha = .78)+
-  scale_fill_gradient(low = "#fff5f0", high = "#cb181d", na.value = "grey50")
+plot_usmap(data = USStates, values = "retail_recreation")+
+  scale_fill_gradient(low = "#cb181d", high = "#fff5f0", na.value = "grey50")
+```
+
+```{r}
+plot_usmap(data = USStates, values = "grocery_pharmacy")+
+  scale_fill_gradient(low = "#cb181d", high = "#fff5f0", na.value = "grey50")
+```
+
+```{r}
+plot_usmap(data = USStates, values = "parks")+
+  scale_fill_gradient(low = "#cb181d", high = "#fff5f0", na.value = "grey50")
+```
+
+```{r}
+plot_usmap(data = USStates, values = "transit_stations", labels = TRUE)+
+  scale_fill_gradient(low = "#cb181d", high = "#fff5f0", na.value = "grey50")
+```
+
+```{r}
+plot_usmap(data = USStates, values = "workplaces", labels = TRUE)+
+  scale_fill_gradient(low = "#cb181d", high = "#fff5f0", na.value = "grey50")
+```
+
+```{r}
+plot_usmap(data = USStates, values = "residential", labels = TRUE)+
+  scale_fill_gradient(low = "#cb181d", high = "#fff5f0", na.value = "grey50")
+```
+
+```{r}
+State_Action <- read_csv("../data/Social Distancing - State Actions.csv")%>%
+  mutate("date of 1st Case" = as.Date("date of 1st Case", format = "%m/%d/%y"),
+         "date of 1st Death" = as.Date("date of 1st Death", format = "%m/%d/%y"),
+         "date of Stay at Home Order" = as.Date("date of Stay at Home Order", format = "%m/%d/%y"))
+```
+
+```{r}
+
+plot_usmap(data = State_Action, values = "Mandatory Quarantine for Travelers", labels = TRUE)
 ```
 

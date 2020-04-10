@@ -36,3 +36,4 @@ USStates %>%
        x = NULL,
        y = "%Change in Mobility Compared to Baseline",
        caption = "Data courtesy of Google")
+
