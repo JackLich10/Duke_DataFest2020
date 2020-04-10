@@ -26,9 +26,9 @@ Countries_Long <-Countries %>%
 Countries_Long %>%
   ggplot() +
   geom_segment(aes(x = reorder(type, mean), xend = type, y = value/100, yend = mean/100)) +
-  geom_point(aes(x = reorder(type, mean), y = value/100, color = type)) +
   geom_point(aes(x = reorder(type, mean), y = mean/100), color = "grey") +
-  facet_wrap(.~ country, scale = "free_y") +
+  geom_point(aes(x = reorder(type, mean), y = value/100, color = type)) +
+  facet_wrap(.~ country) +
   scale_color_discrete(labels = c("Grocery/Pharmacy", "Parks", "Residential", "Retail/Recreation", "Transit Stations", "Workplaces")) +
   scale_y_continuous(labels = scales::percent) +
   theme_ipsum() +
