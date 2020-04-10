@@ -11,6 +11,8 @@ library(tidyverse)
 library(ggrepel)
 library(usethis)
 library(usmap)
+library(sf)
+library(lubridate)
 ```
 
 ```{r}
@@ -52,10 +54,126 @@ USStates %>%
 ```
 
 ```{r}
-state_covid <- read_csv("../data/covid_confirmed_usafacts.csv")
+county_covid <- read_csv("../data/covid_combined_usafacts.csv")
 ```
 
 ```{r}
-plot_usmap
+state_covid <- county_covid %>% 
+  group_by(State, Type, Governor, stateFIPS) %>% 
+  summarise("Population" = sum(population),
+            "1/22/20" = sum(`1/22/2020`),
+            "1/23/20" = sum(`1/23/2020`),
+            "1/24/20" = sum(`1/24/2020`),
+            "1/25/20" = sum(`1/25/2020`),
+            "1/26/20" = sum(`1/26/2020`),
+            "1/27/20" = sum(`1/27/2020`),
+            "1/28/20" = sum(`1/28/2020`),
+            "1/29/20" = sum(`1/29/2020`),
+            "1/30/20" = sum(`1/30/2020`),
+            "1/31/20" = sum(`1/31/2020`),
+            "2/1/20" = sum(`2/1/2020`),
+            "2/2/20" = sum(`2/2/2020`),
+            "2/3/20" = sum(`2/3/2020`),
+            "2/4/20" = sum(`2/4/2020`),
+            "2/5/20" = sum(`2/5/2020`),
+            "2/6/20" = sum(`2/6/2020`),
+            "2/7/20" = sum(`2/7/2020`),
+            "2/8/20" = sum(`2/8/2020`),
+            "2/9/20" = sum(`2/9/2020`),
+            "2/10/20" = sum(`2/10/2020`),
+            "2/11/20" = sum(`2/11/2020`),
+            "2/12/20" = sum(`2/12/2020`),
+            "2/13/20" = sum(`2/13/2020`),
+            "2/14/20" = sum(`2/14/2020`),
+            "2/15/20" = sum(`2/15/2020`),
+            "2/16/20" = sum(`2/16/2020`),
+            "2/17/20" = sum(`2/17/2020`),
+            "2/18/20" = sum(`2/18/2020`),
+            "2/19/20" = sum(`2/19/2020`),
+            "2/20/20" = sum(`2/20/2020`),
+            "2/21/20" = sum(`2/21/2020`),
+            "2/22/20" = sum(`2/22/2020`),
+            "2/23/20" = sum(`2/23/2020`),
+            "2/24/20" = sum(`2/24/2020`),
+            "2/25/20" = sum(`2/25/2020`),
+            "2/26/20" = sum(`2/26/2020`),
+            "2/27/20" = sum(`2/27/2020`),
+            "2/28/20" = sum(`2/28/2020`),
+            "2/29/20" = sum(`2/29/2020`),
+            "3/1/20" = sum(`3/1/2020`),
+            "3/2/20" = sum(`3/2/2020`),
+            "3/3/20" = sum(`3/3/2020`),
+            "3/4/20" = sum(`3/4/2020`),
+            "3/5/20" = sum(`3/5/2020`),
+            "3/6/20" = sum(`3/6/2020`),
+            "3/7/20" = sum(`3/7/2020`),
+            "3/8/20" = sum(`3/8/2020`),
+            "3/9/20" = sum(`3/9/2020`),
+            "3/10/20" = sum(`3/10/2020`),
+            "3/11/20" = sum(`3/11/2020`),
+            "3/12/20" = sum(`3/12/2020`),
+            "3/13/20" = sum(`3/13/2020`),
+            "3/14/20" = sum(`3/14/2020`),
+            "3/15/20" = sum(`3/15/2020`),
+            "3/16/20" = sum(`3/16/2020`),
+            "3/17/20" = sum(`3/17/2020`),
+            "3/18/20" = sum(`3/18/2020`),
+            "3/19/20" = sum(`3/19/2020`),
+            "3/20/20" = sum(`3/20/2020`),
+            "3/21/20" = sum(`3/21/2020`),
+            "3/22/20" = sum(`3/22/2020`),
+            "3/23/20" = sum(`3/23/2020`),
+            "3/24/20" = sum(`3/24/2020`),
+            "3/25/20" = sum(`3/25/2020`),
+            "3/26/20" = sum(`3/26/2020`),
+            "3/27/20" = sum(`3/27/2020`),
+            "3/28/20" = sum(`3/28/2020`),
+            "3/29/20" = sum(`3/29/2020`),
+            "3/30/20" = sum(`3/30/2020`),
+            "3/31/20" = sum(`3/31/2020`),
+            "4/1/20" = sum(`4/1/2020`),
+            "4/2/20" = sum(`4/2/2020`),
+            "4/3/20" = sum(`4/3/2020`),
+            "4/4/20" = sum(`4/4/2020`),
+            "4/5/20" = sum(`4/5/2020`),
+            "4/6/20" = sum(`4/6/2020`),
+            "4/7/20" = sum(`4/7/2020`),
+            "4/8/20" = sum(`4/8/2020`))
+         
+```
+
+```{r}
+state_covid <- state_covid %>% 
+  rename(state = State,
+         type = Type,
+         governor = Governor,
+         fips = stateFIPS,
+         population = Population)
+```
+
+```{r}
+state_covid_confirmed <- state_covid %>% 
+  filter(type == "Confirmed")
+
+state_covid_dead <- state_covid %>% 
+  filter(type == "Deaths")
+
+state_covid_dead %>% 
+  group_by(governor) %>% 
+  summarise(rep_dem = (sum(`4/8/20`)/sum(population)))
+
+state_covid_confirmed <- state_covid_confirmed %>% 
+  mutate(per_100k = (sum(`4/8/20`)/population)*100000) %>% 
+  arrange(desc(per_100k))
+
+state_covid_dead <- state_covid_dead %>% 
+  mutate(per_100k = (sum(`4/8/20`)/population)*100000) %>% 
+  arrange(desc(per_100k))
+```
+
+
+```{r}
+plot_usmap(data = state_covid_confirmed, values = "1/24/20", labels = TRUE, alpha = .78)+
+  scale_fill_gradient(low = "#fff5f0", high = "#cb181d", na.value = "grey50")
 ```
 
