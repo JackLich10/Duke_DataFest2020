@@ -10,11 +10,11 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(ggrepel)
 library(usethis)
+library(usmap)
 ```
 
 ```{r}
-USStates <- read_csv("data/Social Distancing - States.csv") %>%
-  mutate(date = as.Date(date, format = "%m/%d/%y"))
+USStates <- read_csv("../data/Social Distancing - States.csv")
 ```
 
 ```{r}
@@ -52,6 +52,10 @@ USStates %>%
 ```
 
 ```{r}
-state_covid <- read_csv("data/covid_confirmed_usafacts.csv")
+state_covid <- read_csv("../data/covid_confirmed_usafacts.csv")
+```
+
+```{r}
+plot_usmap
 ```
 
