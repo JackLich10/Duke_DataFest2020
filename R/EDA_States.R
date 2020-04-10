@@ -1,17 +1,28 @@
-# EDA script
+# EDA script for states
 library(hrbrthemes)
-library(gcookbook)
 library(tidyverse)
 library(ggrepel)
+library(janitor)
 
+# read in state mobility trends
 USStates <- read_csv("data/Social Distancing - States.csv") %>%
   mutate(date = as.Date(date, format = "%m/%d/%y"))
 
+# read in state governmental actions and basic covid-19 data
+USStateActions <- read_csv("data/Social Distancing - State Actions.csv") %>%
+  clean_names()
+
+# join dataframes and remove unnecessary data
+USStates <- left_join(USStates, USStateActions, by = "state")
+rm(USStateActions)
+
+# function to detect outliers
 is_outlier <- function(x) {
   return(x <= quantile(x, 0.25) - 1.5 * IQR(x) | x >= quantile(x, 0.75) + 1.5 * IQR(x))
 }
 
-USStates %>%
+# pivot from wide to long format
+USStates_Long <- USStates %>%
   pivot_longer(cols = c("retail_recreation", "grocery_pharmacy", "parks",	
                         "transit_stations",	"workplaces",	"residential"),
                names_to = "type") %>%
@@ -20,7 +31,10 @@ USStates %>%
          high_low = case_when(
            !is.na(outlier) & outlier > mean(value) ~ "High",
            !is.na(outlier) & outlier < mean(value) ~ "Low",
-           TRUE ~ as.character(NA))) %>%
+           TRUE ~ as.character(NA)))
+
+# basic EDA boxplot for mobility trends
+USStates_Long %>%
   ggplot() +
   geom_boxplot(aes(x = reorder(type, -value), y = value/100)) +
   geom_text_repel(aes(x = reorder(type, -value), y = value/100,
