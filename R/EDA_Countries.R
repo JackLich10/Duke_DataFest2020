@@ -1,6 +1,5 @@
 # EDA script
 library(hrbrthemes)
-library(gcookbook)
 library(tidyverse)
 library(ggrepel)
 
