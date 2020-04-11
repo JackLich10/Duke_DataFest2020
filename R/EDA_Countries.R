@@ -8,10 +8,6 @@ library(janitor)
 Countries <- read_csv("data/Social Distancing - Countries.csv") %>%
   mutate(date = mdy(date))
 
-is_outlier <- function(x) {
-  return(x <= quantile(x, 0.25) - 1.5 * IQR(x) | x >= quantile(x, 0.75) + 1.5 * IQR(x))
-}
-
 Countries_Long <- Countries %>%
   pivot_longer(cols = c("retail_recreation", "grocery_pharmacy", "parks",	
                         "transit_stations",	"workplaces",	"residential"),
@@ -25,15 +21,18 @@ Countries_Long <- Countries %>%
          mean = mean(value)) 
 
 Countries_Long %>%
+  mutate(type = factor(type, levels = c("retail_recreation", "transit_stations", "grocery_pharmacy", "parks", "workplaces", "residential"))) %>%
   ggplot() +
   geom_segment(aes(x = reorder(type, mean), xend = type, y = value/100, yend = mean/100)) +
   geom_point(aes(x = reorder(type, mean), y = mean/100), color = "grey") +
   geom_point(aes(x = reorder(type, mean), y = value/100, color = type)) +
   facet_wrap(.~ country) +
-  scale_color_discrete(labels = c("Grocery/Pharmacy", "Parks", "Residential", "Retail/Recreation", "Transit Stations", "Workplaces")) +
+  scale_color_discrete(labels = c("Retail/Recreation", "Transit Stations", "Grocery/Pharmacy", "Parks",  "Workplaces", "Residential")) +
   scale_y_continuous(labels = scales::percent) +
-  theme_ipsum() +
-  theme(axis.text.x = element_blank()) +
+  theme_ipsum(axis = "y") +
+  theme(axis.text.x = element_blank(),
+        panel.spacing = unit(0.25, "lines"),
+        legend.position = c(0.9, 0.175)) +
   labs(title = "International Covid-19 Mobility Trends",
        subtitle = paste0("as of ", Countries$date, " (grey points correspond to average among 10 countries)"),
        x = NULL,

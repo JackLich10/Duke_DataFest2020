@@ -83,29 +83,32 @@ USStates_Long %>%
 
 USStates %>%
   arrange(desc(euclidean_dist)) %>%
-  head(10) %>%
+  head(20) %>%
   ggplot() +
-  geom_col(aes(y = reorder(state, euclidean_dist), x = euclidean_dist)) +
+  geom_col(aes(y = reorder(state, euclidean_dist), x = euclidean_dist, fill = euclidean_dist)) +
   theme_ipsum(grid = "X") +
-  labs(title = "10 Most Unique Mobility Trends",
+  guides(fill = F) +
+  labs(title = "20 Most Unique Mobility Trends",
        subtitle = "among US states",
        x = "Standardized Euclidean Distance",
        y = NULL)
 
 USStates_Long %>%
+  mutate(type = factor(type, levels = c("transit_stations", "retail_recreation", "workplaces", "grocery_pharmacy", "parks", "residential"))) %>%
   arrange(desc(euclidean_dist)) %>%
   head(60) %>%
-  ggplot() +
+  ggplot(aes(order = mean)) +
   geom_segment(aes(x = reorder(type, mean), xend = type, y = value/100, yend = mean/100)) +
   geom_point(aes(x = reorder(type, mean), y = mean/100), color = "grey") +
   geom_point(aes(x = reorder(type, mean), y = value/100, color = type)) +
   facet_wrap(.~ state) +
-  scale_color_discrete(labels = c("Grocery/Pharmacy", "Parks", "Residential", "Retail/Recreation", "Transit Stations", "Workplaces")) +
+  scale_color_discrete(labels = c("Transit Stations", "Retail/Recreation", "Workplaces", "Grocery/Pharmacy", "Parks", "Residential")) +
   scale_y_continuous(labels = scales::percent) +
-  theme_ipsum() +
+  theme_ipsum(axis = "y") +
   theme(axis.text.x = element_blank(),
-        panel.spacing = unit(0.25, "lines")) +
-  labs(title = "International Covid-19 Mobility Trends",
+        panel.spacing = unit(0.25, "lines"),
+        legend.position = c(0.9, 0.175)) +
+  labs(title = "US Covid-19 Mobility Trends",
        subtitle = paste0("as of ", USStates$date, " (grey points correspond to average among all US states)"),
        x = NULL,
        y = "%Change in Mobility Compared to Baseline",
