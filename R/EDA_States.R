@@ -14,14 +14,22 @@ USStates <- read_csv("data/Social Distancing - States.csv")
 USStateActions <- read_csv("data/Social Distancing - State Actions.csv") %>%
   janitor::clean_names()
 
+# read in confirmed cases
+ConfirmedCases <- read_csv("data/Social Distancing - Sheet4.csv") %>%
+  select(1:3) %>%
+  pivot_longer(cols = c(2:3), names_to = "date", values_to = "confirmed_cases_through_date", names_prefix = "cases_through") %>%
+  mutate(date = mdy(date))
+
 # join dataframes and remove unnecessary data
 USStates <- left_join(USStates, USStateActions, by = "state") %>%
-  mutate_at(vars(starts_with("date"), state_mandated_school_closures, emergency_declaration), mdy)
-rm(USStateActions)
+  mutate_at(vars(starts_with("date"), state_mandated_school_closures, emergency_declaration), mdy) %>%
+  left_join(ConfirmedCases, by = c("state", "date"))
+rm(USStateActions, ConfirmedCases)
 
 # find days between 1st case and 1st death
 USStates <- USStates %>%
-  mutate(days_from_case_to_death = date_of_1st_death - date_of_1st_case)
+  mutate(days_from_case_to_death = date_of_1st_death - date_of_1st_case,
+         cases_per_capita = confirmed_cases_through_date/population)
 
 # function to find Euclidean distance
 find_euclidean_dist <- function(data) {
@@ -53,6 +61,9 @@ find_euclidean_dist <- function(data) {
   return(data)
 }
 
+USStates %>%
+  group_by(state)
+  
 # function to detect outliers
 is_outlier <- function(x) {
   return(x <= quantile(x, 0.25) - 1.5 * IQR(x) | x >= quantile(x, 0.75) + 1.5 * IQR(x))
