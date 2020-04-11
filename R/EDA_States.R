@@ -23,20 +23,25 @@ rm(USStateActions)
 USStates <- USStates %>%
   mutate(days_from_case_to_death = date_of_1st_death - date_of_1st_case)
 
+# normalization of mobility trends (subtracting mean, dividing by standard deviation) (must be quantitative data)
+means <- apply(USStates[, 3:8], 2, mean)
+stdevs <- apply(USStates[, 3:8], 2, sd)
+standardized <- as.data.frame(scale(USStates[, 3:8], means, stdevs))
+
 # find euclidean distance from avg mobility trends for all states
-avg_mobility_US <- USStates %>%
+avg_mobility_US <- standardized %>%
   summarise(across(retail_recreation:residential, mean))
 
 euclid_dist <- tibble(state = USStates$state,
                       euclidean_dist = as.numeric(rep(NA, nrow(USStates))))
 
 for (i in 1:nrow(USStates)) {
-  euclid_dist[i, 2] <- as.numeric(dist(rbind(avg_mobility_US, USStates[i,3:8])))
+  euclid_dist[i, 2] <- as.numeric(dist(rbind(avg_mobility_US, standardized[i,1:6])))
 }
 
 # join euclidean distance by state and remove unnecessary dataframes
 USStates <- left_join(USStates, euclid_dist, by = "state")
-rm(avg_mobility_US, euclid_dist, i)
+rm(avg_mobility_US, euclid_dist, i, means, stdevs, standardized)
 
 # function to detect outliers
 is_outlier <- function(x) {
@@ -53,8 +58,8 @@ USStates_Long <- USStates %>%
          high_low = case_when(
            !is.na(outlier) & outlier > mean(value) ~ "High",
            !is.na(outlier) & outlier < mean(value) ~ "Low",
-           TRUE ~ as.character(NA)))
-
+           TRUE ~ as.character(NA)),
+         mean = mean(value))
 
 # Exploratory Data Analysis -----------------------------------------------
 
@@ -76,17 +81,33 @@ USStates_Long %>%
        y = "%Change in Mobility Compared to Baseline",
        caption = "Data courtesy of Google")
 
-
 USStates %>%
-  ggplot() +
-  geom_boxplot(aes(x = large_gatherings_ban, y = days_from_case_to_death))
-
-USStates %>%
+  arrange(desc(euclidean_dist)) %>%
+  head(10) %>%
   ggplot() +
   geom_col(aes(y = reorder(state, euclidean_dist), x = euclidean_dist)) +
-  theme_ipsum(grid = "x") +
-  labs(title = "Most Unique Mobility Trends",
-       subtitle = paste0("as of ", USStates$date),
-       x = "Euclidean Distance",
+  theme_ipsum(grid = "X") +
+  labs(title = "10 Most Unique Mobility Trends",
+       subtitle = "among US states",
+       x = "Standardized Euclidean Distance",
        y = NULL)
-  
+
+USStates_Long %>%
+  arrange(desc(euclidean_dist)) %>%
+  head(60) %>%
+  ggplot() +
+  geom_segment(aes(x = reorder(type, mean), xend = type, y = value/100, yend = mean/100)) +
+  geom_point(aes(x = reorder(type, mean), y = mean/100), color = "grey") +
+  geom_point(aes(x = reorder(type, mean), y = value/100, color = type)) +
+  facet_wrap(.~ state) +
+  scale_color_discrete(labels = c("Grocery/Pharmacy", "Parks", "Residential", "Retail/Recreation", "Transit Stations", "Workplaces")) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_ipsum() +
+  theme(axis.text.x = element_blank(),
+        panel.spacing = unit(0.25, "lines")) +
+  labs(title = "International Covid-19 Mobility Trends",
+       subtitle = paste0("as of ", USStates$date, " (grey points correspond to average among all US states)"),
+       x = NULL,
+       y = "%Change in Mobility Compared to Baseline",
+       color = NULL,
+       caption = "Data courtesy of Google")

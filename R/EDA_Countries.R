@@ -12,7 +12,7 @@ is_outlier <- function(x) {
   return(x <= quantile(x, 0.25) - 1.5 * IQR(x) | x >= quantile(x, 0.75) + 1.5 * IQR(x))
 }
 
-Countries_Long <-Countries %>%
+Countries_Long <- Countries %>%
   pivot_longer(cols = c("retail_recreation", "grocery_pharmacy", "parks",	
                         "transit_stations",	"workplaces",	"residential"),
                names_to = "type") %>%
