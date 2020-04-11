@@ -1,9 +1,11 @@
-# EDA script for states
+# load libraries
 library(hrbrthemes)
 library(tidyverse)
 library(ggrepel)
 library(lubridate)
 library(janitor)
+
+# Data Cleaning/Manipulation ----------------------------------------------
 
 # read in state mobility trends
 USStates <- read_csv("data/Social Distancing - States.csv")
@@ -32,8 +34,9 @@ for (i in 1:nrow(USStates)) {
   euclid_dist[i, 2] <- as.numeric(dist(rbind(avg_mobility_US, USStates[i,3:8])))
 }
 
+# join euclidean distance by state and remove unnecessary dataframes
 USStates <- left_join(USStates, euclid_dist, by = "state")
-rm(euclid_dist, i)
+rm(avg_mobility_US, euclid_dist, i)
 
 # function to detect outliers
 is_outlier <- function(x) {
@@ -51,6 +54,9 @@ USStates_Long <- USStates %>%
            !is.na(outlier) & outlier > mean(value) ~ "High",
            !is.na(outlier) & outlier < mean(value) ~ "Low",
            TRUE ~ as.character(NA)))
+
+
+# Exploratory Data Analysis -----------------------------------------------
 
 # basic EDA boxplot for mobility trends
 USStates_Long %>%
