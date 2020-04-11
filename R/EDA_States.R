@@ -2,19 +2,38 @@
 library(hrbrthemes)
 library(tidyverse)
 library(ggrepel)
+library(lubridate)
 library(janitor)
 
 # read in state mobility trends
-USStates <- read_csv("data/Social Distancing - States.csv") %>%
-  mutate(date = as.Date(date, format = "%m/%d/%y"))
+USStates <- read_csv("data/Social Distancing - States.csv")
 
 # read in state governmental actions and basic covid-19 data
 USStateActions <- read_csv("data/Social Distancing - State Actions.csv") %>%
-  set_names(tolower(make.names(names(.))))
+  janitor::clean_names()
 
 # join dataframes and remove unnecessary data
-USStates <- left_join(USStates, USStateActions, by = "state")
+USStates <- left_join(USStates, USStateActions, by = "state") %>%
+  mutate_at(vars(starts_with("date"), state_mandated_school_closures, emergency_declaration), mdy)
 rm(USStateActions)
+
+# find days between 1st case and 1st death
+USStates <- USStates %>%
+  mutate(days_from_case_to_death = date_of_1st_death - date_of_1st_case)
+
+# find euclidean distance from avg mobility trends for all states
+avg_mobility_US <- USStates %>%
+  summarise(across(retail_recreation:residential, mean))
+
+euclid_dist <- tibble(state = USStates$state,
+                      euclidean_dist = as.numeric(rep(NA, nrow(USStates))))
+
+for (i in 1:nrow(USStates)) {
+  euclid_dist[i, 2] <- as.numeric(dist(rbind(avg_mobility_US, USStates[i,3:8])))
+}
+
+USStates <- left_join(USStates, euclid_dist, by = "state")
+rm(euclid_dist, i)
 
 # function to detect outliers
 is_outlier <- function(x) {
@@ -51,3 +70,7 @@ USStates_Long %>%
        y = "%Change in Mobility Compared to Baseline",
        caption = "Data courtesy of Google")
 
+
+USStates %>%
+  ggplot() +
+  geom_boxplot(aes(x = large_gatherings_ban, y = days_from_case_to_death))
