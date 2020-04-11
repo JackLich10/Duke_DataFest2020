@@ -80,3 +80,13 @@ USStates_Long %>%
 USStates %>%
   ggplot() +
   geom_boxplot(aes(x = large_gatherings_ban, y = days_from_case_to_death))
+
+USStates %>%
+  ggplot() +
+  geom_col(aes(y = reorder(state, euclidean_dist), x = euclidean_dist)) +
+  theme_ipsum(grid = "x") +
+  labs(title = "Most Unique Mobility Trends",
+       subtitle = paste0("as of ", USStates$date),
+       x = "Euclidean Distance",
+       y = NULL)
+  

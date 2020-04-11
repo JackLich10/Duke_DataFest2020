@@ -2,9 +2,11 @@
 library(hrbrthemes)
 library(tidyverse)
 library(ggrepel)
+library(lubridate)
+library(janitor)
 
 Countries <- read_csv("data/Social Distancing - Countries.csv") %>%
-  mutate(date = as.Date(date, format = "%m/%d/%y"))
+  mutate(date = mdy(date))
 
 is_outlier <- function(x) {
   return(x <= quantile(x, 0.25) - 1.5 * IQR(x) | x >= quantile(x, 0.75) + 1.5 * IQR(x))
