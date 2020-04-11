@@ -175,12 +175,6 @@ state_covid_dead <- state_covid_dead %>%
   ungroup()
 ```
 
-```{r}
-state_covid_confirmed %>% 
-  t() %>% 
-  as.data.frame()
-```
-
 ## Starting Fresh 
 
 ```{r}
@@ -194,8 +188,12 @@ plot_usmap(data = USStates, values = "grocery_pharmacy")+
 ```
 
 ```{r}
-plot_usmap(data = USStates, values = "parks")+
-  scale_fill_gradient(low = "#cb181d", high = "#fff5f0", na.value = "grey50")
+plot_usmap(data = USStates, values = "parks", labels = TRUE)+
+  scale_fill_steps2(
+  low = "#b2182b",
+  mid = "white",
+  high = "blue",
+  midpoint = 0)
 ```
 
 ```{r}
@@ -221,7 +219,71 @@ State_Action <- read_csv("../data/Social Distancing - State Actions.csv")%>%
 ```
 
 ```{r}
+USStates <- USStates %>% 
+  mutate(date.of.1st.case = as.Date(date.of.1st.case, format = "%m/%d/%y"),
+         date.of.1st.death = as.Date(date.of.1st.death, format = "%m/%d/%y"),
+         date.of.stay.at.home.order = as.Date(date.of.stay.at.home.order, format = "%m/%d/%y"),
+         state.mandated.school.closures = as.Date(state.mandated.school.closures, format = "%m/%d/%y"),
+         emergency.declaration = as.Date(emergency.declaration, format = "%m/%d/%y"))
 
-plot_usmap(data = State_Action, values = "Mandatory Quarantine for Travelers", labels = TRUE)
+str(USStates)
+```
+
+
+```{r}
+USStates <- USStates %>% 
+  mutate(resp_home = date.of.stay.at.home.order - date.of.1st.case,
+         resp_school = state.mandated.school.closures - date.of.1st.case,
+         resp_emer = emergency.declaration - date.of.1st.case)
+
+USStates %>% 
+  ggplot(aes(x = date.of.1st.case, y = resp_home))+
+  geom_point()
+
+USStates %>% 
+  ggplot(aes(x = date.of.1st.case, y = date.of.stay.at.home.order))+
+  geom_point()
+
+USStates %>% 
+  ggplot(aes(x = date.of.1st.case, y = resp_school))+
+  geom_point()
+
+USStates %>% 
+  ggplot(aes(x = date.of.1st.case, y = resp_emer))+
+  geom_point()
+# Roughly linear relationship between 1st case date and response times
+```
+
+```{r}
+USStates %>% 
+  mutate(parks_bin = ifelse(parks >0, "pos", "neg"))
+
+USStates %>% 
+  mutate(parks_bin = ifelse(parks >0, "pos", "neg")) %>% 
+  group_by(parks_bin) %>% 
+  filter(resp_home != is.na(resp_home)) %>% 
+  summarise(mean(resp_home))
+
+USStates %>% 
+  mutate(parks_bin = ifelse(parks >0, "pos", "neg")) %>% 
+  group_by(parks_bin) %>% 
+  filter(resp_school != is.na(resp_school)) %>% 
+  summarise(mean(resp_school))
+
+USStates %>% 
+  mutate(parks_bin = ifelse(parks >0, "pos", "neg")) %>% 
+  group_by(parks_bin) %>% 
+  filter(resp_emer != is.na(resp_emer)) %>% 
+  summarise(mean(resp_emer))
+```
+
+```{r}
+  state_covid_confirmed[ , 6:83] <- lapply(state_covid_confirmed[ , 6:83], as.Date, origin="1970-01-01")
+
+str(state_covid_confirmed)
+```
+```{r}
+state_covid_confirmed %>% 
+  ggplot(aes(x = col(6:83), y = ))
 ```
 

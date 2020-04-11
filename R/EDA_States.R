@@ -10,7 +10,7 @@ USStates <- read_csv("data/Social Distancing - States.csv") %>%
 
 # read in state governmental actions and basic covid-19 data
 USStateActions <- read_csv("data/Social Distancing - State Actions.csv") %>%
-  clean_names()
+  set_names(tolower(make.names(names(.))))
 
 # join dataframes and remove unnecessary data
 USStates <- left_join(USStates, USStateActions, by = "state")
