@@ -80,3 +80,4 @@ USStates_Long %>%
 USStates %>%
   ggplot() +
   geom_boxplot(aes(x = large_gatherings_ban, y = days_from_case_to_death))
+
