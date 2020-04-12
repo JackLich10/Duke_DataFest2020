@@ -207,11 +207,9 @@ USStates_Long %>%
        color = NULL,
        caption = "Data courtesy of Google")
 
-<<<<<<< HEAD
-=======
+
 USStates %>%
   ggplot() +
-<<<<<<< HEAD
   geom_col(aes(y = reorder(state, euclidean_dist), x = euclidean_dist)) +
   theme_ipsum(grid = "x") +
   labs(title = "Most Unique Mobility Trends",
@@ -219,7 +217,6 @@ USStates %>%
        x = "Euclidean Distance",
        y = NULL)
   
->>>>>>> 564907e82b5a61c071d7f3afcb3fda3a2095d7ff
-=======
+
   geom_point(aes(x = days_from_case_to_death, y = euclidean_dist))
->>>>>>> 943f7894837563a9ec51db5dc0a4f03aedfe5cd6
+
