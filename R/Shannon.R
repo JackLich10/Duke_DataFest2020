@@ -38,20 +38,49 @@ glance(lm_efficient_2) %>%
 #Note adjusted r squared sucks = .1723
 
 # Looking at Response Time -------------------------------------------------
-
+# Create response time variables
 state_data_set <- state_data_set %>% 
   mutate(response_stay_home = date_of_stay_at_home_order - date_of_1st_case,
          response_school = state_mandated_school_closures - date_of_1st_case,
          response_emergency = emergency_declaration - date_of_1st_case
          ) 
-# Create response time variables
+# Note that 6/51 states/DC do not have stay at home orders
 state_data_set %>% 
-  mutate(resp_sch = mean(response_school),
-         resp_emer = mean(response_emergency),
-         resp_home = mean(response_stay_home)) %>% 
-  select(resp_sch, resp_home, resp_emer)
+  filter(response_stay_home != is.na(response_stay_home)) %>% 
+  select(response_stay_home)
 
 # Attempt to plot
-ggplot(data = state_data_set, aes(y = response_emergency))+
-  geom_boxplot()
+# pivot from wide to long format
+state_data_set_long <- state_data_set %>%
+  pivot_longer(cols = c("response_stay_home", "response_school", 
+                        "response_emergency")
+               names_to = "response_type") %>%
+  group_by(date, response_type) %>%
+  mutate(outlier = ifelse(is_outlier(value), value, as.numeric(NA)),
+         high_low = case_when(
+           !is.na(outlier) & outlier > mean(value) ~ "High",
+           !is.na(outlier) & outlier < mean(value) ~ "Low",
+           TRUE ~ as.character(NA)),
+         mean = mean(value))
+
+# Exploratory Data Analysis -----------------------------------------------
+
+# basic EDA boxplot for mobility trends
+USStates_Long %>%
+  ggplot() +
+  geom_boxplot(aes(x = reorder(response_type, -value), y = value/100)) +
+  geom_text_repel(aes(x = reorder(type, -value), y = value/100,
+                      label = ifelse(!is.na(outlier), paste0(state, ": ", outlier, "%"), ""),
+                      color = high_low), size = 3, fontface = "bold", family = hrbrthemes::font_an) +
+  scale_x_discrete(labels = c("Residential", "Parks", "Grocery/Pharmacy", "Workplaces", "Retail/Recreation", "Transit Stations")) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_color_manual(values = c("red", "blue")) +
+  facet_wrap(.~ date) +
+  guides(color = F) +
+  theme_ipsum(axis = "xy") +
+  theme(axis.text.x = element_text(angle = 40, hjust = 1)) +
+  labs(title = "United States Mobility Trends",
+       x = NULL,
+       y = "%Change in Mobility Compared to Baseline",
+       caption = "Data courtesy of Google")
   
