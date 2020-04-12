@@ -470,3 +470,7 @@ our_country_data <- confirmed_by_country %>%
   filter(`Country/Region` %in% x)
 ```
 
+```{r}
+plot_usmap(data = state_data_set, values = "date_of_stay_at_home_order")
+```
+

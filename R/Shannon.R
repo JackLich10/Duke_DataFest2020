@@ -1,8 +1,10 @@
 library(tidyverse)
 library(broom)
 library(dplyr)
+library(ggrepel)
+library(hrbrthemes)
 
-source("Helpers.R")
+source("R/Helpers.R")
 
 #read in data 
 state_data_set <- read_csv("data/USStates.csv")
@@ -44,7 +46,6 @@ glance(lm_efficient_2) %>%
 state_data_set <- state_data_set %>% 
   mutate(response_stay_home = date_of_stay_at_home_order - date_of_1st_case,
          response_school = state_mandated_school_closures - date_of_1st_case,
-<<<<<<< HEAD
          response_emergency = emergency_declaration - date_of_1st_case
          ) 
 # Note that 6/51 states/DC do not have stay at home orders
@@ -67,28 +68,6 @@ state_data_set_long <- state_data_set %>%
          mean = mean(value))
 
 # Exploratory Data Analysis -----------------------------------------------
-
-# basic EDA boxplot for mobility trends
-USStates_Long %>%
-  ggplot() +
-  geom_boxplot(aes(x = reorder(response_type, -value), y = value/100)) +
-  geom_text_repel(aes(x = reorder(type, -value), y = value/100,
-                      label = ifelse(!is.na(outlier), paste0(state, ": ", outlier, "%"), ""),
-                      color = high_low), size = 3, fontface = "bold", family = hrbrthemes::font_an) +
-  scale_x_discrete(labels = c("Residential", "Parks", "Grocery/Pharmacy", "Workplaces", "Retail/Recreation", "Transit Stations")) +
-  scale_y_continuous(labels = scales::percent) +
-  scale_color_manual(values = c("red", "blue")) +
-  facet_wrap(.~ date) +
-  guides(color = F) +
-  theme_ipsum(axis = "xy") +
-  theme(axis.text.x = element_text(angle = 40, hjust = 1)) +
-  labs(title = "United States Mobility Trends",
-       x = NULL,
-       y = "%Change in Mobility Compared to Baseline",
-       caption = "Data courtesy of Google")
-  
-=======
-         response_emergency = emergency_declaration - date_of_1st_case) 
 
 # wide to long conversion
 state_data_set_long <- state_data_set %>%
@@ -120,4 +99,35 @@ state_data_set_long %>%
        x = NULL,
        y = "Response Time From Date of 1st Case")
 
->>>>>>> 26107613c45f267576dfd4f8e9c3e4d66e099b8b
+# Closer look at NA stay at home states
+
+state_data_set %>% 
+  filter(is.na(response_stay_home)) %>% 
+  group_by(date) %>% 
+  summarise(avg_per_capita = mean(cases_per_capita),
+            avg_cases = mean(confirmed_cases_through_date),
+            avg_pop = mean(population))
+
+state_data_set %>% 
+  filter(response_stay_home != is.na(response_stay_home)) %>% 
+  group_by(date) %>% 
+  summarise(avg_per_capita = mean(cases_per_capita),
+            avg_cases = mean(confirmed_cases_through_date),
+            avg_pop = mean(population))
+  
+  .000352/.000123
+  .000871/.000288
+  6644679/1639835
+  7391/454
+  3116/197
+# States who have declared stay at home orders have approximately
+# three times more corona virus per capita than those that did not
+# and 4 times the population accounting for 16 times more corona cases
+
+#Map of stay at home orders shows midwest is not responsive, and that
+#Washington state failed to respond first despite being firse case
+plot_usmap(data = state_data_set, values = "date_of_stay_at_home_order")
+  
+plot_usmap(data = state_data_set, values = "date_of_1st_case")
+
+
