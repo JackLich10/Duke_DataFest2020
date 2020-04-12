@@ -5,6 +5,9 @@ library(ggrepel)
 library(lubridate)
 library(janitor)
 
+# load helper functions
+source("R/Helpers.R")
+
 # Data Cleaning/Manipulation ----------------------------------------------
 
 # read in state mobility trends
@@ -31,44 +34,6 @@ USStates <- USStates %>%
   mutate(days_from_case_to_death = date_of_1st_death - date_of_1st_case,
          cases_per_capita = confirmed_cases_through_date/population)
 
-# function to find Euclidean distance
-find_euclidean_dist <- function(data) {
-  # make a copy of data
-  data_copy <- data
-  
-  for (i in c(nrow(data)/2, nrow(data))) {
-    # normalization of mobility trends (subtracting mean, dividing by standard deviation) (must be quantitative data)
-    means <- apply(data[(i-50):i, 3:8], 2, mean)
-    stdevs <- apply(data[(i-50):i, 3:8], 2, sd)
-    data_copy[(i-50):i, 3:8] <- as.data.frame(scale(data[(i-50):i, 3:8], means, stdevs))
-  }
-  
-  # find euclidean distance from avg mobility trends for all states
-  avg_mobility_US <- data_copy %>%
-    group_by(date) %>%
-    summarise(across(retail_recreation:residential, mean))
-  
-  euclid_dist <- tibble(state = data$state,
-                        date = data$date,
-                        euclidean_dist = as.numeric(rep(NA, nrow(data))))
-  
-  for (i in 1:nrow(data)) {
-    euclid_dist[i, 3] <- as.numeric(dist(rbind(avg_mobility_US[ceiling(2*i/nrow(data)),2:7], data_copy[i,3:8])))
-  }
-  
-  # join euclidean distance by state and remove unnecessary dataframes
-  data <- left_join(data, euclid_dist, by = c("state", "date"))
-  return(data)
-}
-
-USStates %>%
-  group_by(state)
-  
-# function to detect outliers
-is_outlier <- function(x) {
-  return(x <= quantile(x, 0.25) - 1.5 * IQR(x) | x >= quantile(x, 0.75) + 1.5 * IQR(x))
-}
-
 USStates <- find_euclidean_dist(data = USStates)
 
 # pivot from wide to long format
@@ -76,7 +41,7 @@ USStates_Long <- USStates %>%
   pivot_longer(cols = c("retail_recreation", "grocery_pharmacy", "parks",	
                         "transit_stations",	"workplaces",	"residential"),
                names_to = "type") %>%
-  group_by(date , type) %>%
+  group_by(date, type) %>%
   mutate(outlier = ifelse(is_outlier(value), value, as.numeric(NA)),
          high_low = case_when(
            !is.na(outlier) & outlier > mean(value) ~ "High",
@@ -108,9 +73,9 @@ USStates_Long %>%
 # Most unique mobility states
 pd <- USStates %>%
   group_by(date) %>%
-  top_n(10, euclidean_dist) %>% 
+  top_n(10, euclidean_dist_avg) %>% 
   ungroup() %>%
-  arrange(date, euclidean_dist) %>%
+  arrange(date, euclidean_dist_avg) %>%
   mutate(order = row_number()) %>%
   group_by(state) %>%
   mutate(count = n()) %>%
@@ -118,7 +83,7 @@ pd <- USStates %>%
 
 pd %>%
   ggplot() +
-  geom_col(aes(y = order, x = euclidean_dist, fill = count)) +
+  geom_col(aes(y = order, x = euclidean_dist_avg, fill = count)) +
   facet_wrap(.~ date, scales = "free") +
   scale_y_continuous(breaks = pd$order, labels = pd$state, expand = c(0, 0)) +
   guides(fill = F) +
@@ -134,8 +99,8 @@ pd %>%
 USStates %>%
   group_by(state) %>%
   mutate(diff_euclid = case_when(
-    date == "2020-03-29" ~ euclidean_dist - lead(euclidean_dist, order_by = date, default = 0),
-    date == "2020-04-05" ~ euclidean_dist - lag(euclidean_dist, order_by = date, default = 0)),
+    date == "2020-03-29" ~ euclidean_dist_avg - lead(euclidean_dist_avg, order_by = date, default = 0),
+    date == "2020-04-05" ~ euclidean_dist_avg - lag(euclidean_dist_avg, order_by = date, default = 0)),
     color = case_when(
       date == "2020-03-29" & diff_euclid > 0.95 ~ "More Average",
       date == "2020-03-29" & diff_euclid < -0.95 ~ "More Unique",
@@ -144,9 +109,9 @@ USStates %>%
       TRUE ~ "About the Same"
     )) %>%
   ggplot() +
-  geom_line(aes(x = date, y = euclidean_dist, group = state, color = color, alpha = abs(diff_euclid))) +
-  geom_point(aes(x = date, y = euclidean_dist, alpha = abs(diff_euclid))) +
-  geom_text_repel(aes(x = date, y = euclidean_dist, label = ifelse(abs(diff_euclid) > .95, state, "")), 
+  geom_line(aes(x = date, y = euclidean_dist_avg, group = state, color = color, alpha = abs(diff_euclid))) +
+  geom_point(aes(x = date, y = euclidean_dist_avg, alpha = abs(diff_euclid))) +
+  geom_text_repel(aes(x = date, y = euclidean_dist_avg, label = ifelse(abs(diff_euclid) > .95, state, "")), 
                   size = 3, family = hrbrthemes::font_an) +
   scale_color_manual(values = c("grey", "blue", "red")) +
   guides(alpha = F) +
@@ -161,8 +126,8 @@ USStates %>%
 USStates_Long %>%
   filter(date == "2020-03-29") %>%
   mutate(type = factor(type, levels = c("transit_stations", "retail_recreation", "workplaces", "grocery_pharmacy", "parks", "residential")),
-         state = factor(state, levels = state[order(-euclidean_dist)])) %>%
-  arrange(desc(euclidean_dist)) %>%
+         state = factor(state, levels = state[order(-euclidean_dist_avg)])) %>%
+  arrange(desc(euclidean_dist_avg)) %>%
   head(60) %>%
   ggplot(aes(order = mean)) +
   geom_segment(aes(x = reorder(type, mean), xend = type, y = value/100, yend = mean/100)) +
@@ -186,8 +151,8 @@ USStates_Long %>%
 USStates_Long %>%
   filter(date == "2020-04-05") %>%
   mutate(type = factor(type, levels = c("transit_stations", "retail_recreation", "workplaces", "grocery_pharmacy", "parks", "residential")),
-         state = factor(state, levels = state[order(-euclidean_dist)])) %>%
-  arrange(desc(euclidean_dist)) %>%
+         state = factor(state, levels = state[order(-euclidean_dist_avg)])) %>%
+  arrange(desc(euclidean_dist_avg)) %>%
   head(60) %>%
   ggplot(aes(order = mean)) +
   geom_segment(aes(x = reorder(type, mean), xend = type, y = value/100, yend = mean/100)) +
@@ -207,16 +172,22 @@ USStates_Long %>%
        color = NULL,
        caption = "Data courtesy of Google")
 
-
 USStates %>%
-  ggplot() +
-  geom_col(aes(y = reorder(state, euclidean_dist), x = euclidean_dist)) +
-  theme_ipsum(grid = "x") +
-  labs(title = "Most Unique Mobility Trends",
-       subtitle = paste0("as of ", USStates$date),
-       x = "Euclidean Distance",
-       y = NULL)
-  
+  filter(state == "Indiana")
 
-  geom_point(aes(x = days_from_case_to_death, y = euclidean_dist))
+a <- USStates %>%
+  select(state, date, cases_per_capita, euclidean_dist_change) %>%
+  group_by(state) %>%
+  mutate(change_cases_per_capita = cases_per_capita - lag(cases_per_capita, order_by = date, default = 0)) 
+%>%
+  filter(date == "2020-04-05") %>%
+  ggplot() +
+  geom_point(aes(x = euclidean_dist_change, y = change_cases_per_capita)) +
+  geom_text_repel(aes(x = euclidean_dist_change, y = change_cases_per_capita, label = ifelse(euclidean_dist_change > 2.5 | change_cases_per_capita > 0.002, state, "")),
+                  family = hrbrthemes::font_an) +
+  theme_ipsum() +
+  labs(title = "How does changing mobility change number of cases?",
+       x = "Change in Standardized Euclidean Distance",
+       y = "Change in Cases/Capita")
+
 
