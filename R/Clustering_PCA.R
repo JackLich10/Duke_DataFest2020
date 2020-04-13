@@ -1,18 +1,6 @@
 # source data cleaning
 source("R/Data_Cleaning_Manip.R")
 
-# function to standardize mobility data
-standardize_data <- function(data) {
-  data_copy <- data
-  
-  for (i in c(nrow(data)/2, nrow(data))) {
-    # normalization of mobility trends (subtracting mean, dividing by standard deviation) (must be quantitative data)
-    means <- apply(data[(i-50):i, 3:8], 2, mean)
-    stdevs <- apply(data[(i-50):i, 3:8], 2, sd)
-    data_copy[(i-50):i, 3:8] <- as.data.frame(scale(data[(i-50):i, 3:8], means, stdevs))
-  }
-  return(data_copy)
-}
 # standardize mobility data
 US_standardized <- standardize_data(USStates)
 
@@ -93,21 +81,3 @@ ggbiplot::ggbiplot(USStates_PCA, ellipse = T, groups = clusters) +
        color = "Cluster")
 
 detach("package:plyr", unload = TRUE)
-
-# # cluster dendrogram with complete linkage
-# hierarchical_clust_c <- hclust(distance_march)
-# plot(hierarchical_clust_c, hang = 1)
-# 
-# rect.hclust(hierarchical_clust_c, k = 2, border = "grey")
-# rect.hclust(hierarchical_clust_c, k = 3, border = "blue")
-# rect.hclust(hierarchical_clust_c, k = 4, border = "red")
-# 
-# # k-means clustering
-# k_means_c <- kmeans(distance_april, 3)
-# plot(US_standardized[, 3:8], col = k_means_c$cluster)
-# k_means_c
-# 
-# # hierarchical clustering
-# clusters <- cutree(hierarchical_clust_c, 3)
-# plot(US_standardized[, 3:8], col = clusters)
-  

@@ -58,8 +58,7 @@ USStates %>%
       date == "2020-03-29" & diff_euclid < -0.95 ~ "More Unique",
       date == "2020-04-05" & diff_euclid > 0.95 ~ "More Unique",
       date == "2020-04-05" & diff_euclid < -0.95 ~ "More Average",
-      TRUE ~ "About the Same"
-    )) %>%
+      TRUE ~ "About the Same")) %>%
   ggplot() +
   geom_line(aes(x = date, y = euclidean_dist_avg, group = state, color = color, alpha = abs(diff_euclid))) +
   geom_point(aes(x = date, y = euclidean_dist_avg, alpha = abs(diff_euclid))) +
@@ -142,4 +141,11 @@ a <- USStates %>%
        x = "Change in Standardized Euclidean Distance",
        y = "Change in Cases/Capita")
 
+USStates %>%
+  filter(date == "2020-03-29") %>%
+  mutate(color = case_when(
+    euclidean_dist_change > 1.5 ~ "Large Change in Mobility",
+    TRUE ~ "About the Same")) %>%
+  ggplot() +
+  geom_col(aes(x = euclidean_dist_change, y = reorder(state, euclidean_dist_change)))
 
