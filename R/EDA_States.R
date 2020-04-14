@@ -2,7 +2,6 @@
 source("R/Data_Cleaning_Manip.R")
 
 # Exploratory Data Analysis -----------------------------------------------
-
 # basic EDA boxplot for mobility trends
 USStates_Long %>%
   ggplot() +

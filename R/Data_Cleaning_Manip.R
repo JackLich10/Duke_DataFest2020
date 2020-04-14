@@ -5,7 +5,7 @@ library(ggrepel)
 library(lubridate)
 library(janitor)
 
-# set seed
+# set seed for repeatability
 set.seed(123)
 
 # load helper functions
@@ -34,25 +34,12 @@ rm(USStateActions, ConfirmedCases)
 
 # find days between 1st case and 1st death
 USStates <- USStates %>%
-  mutate(days_from_case_to_death = date_of_1st_death - date_of_1st_case,
-         days_from_case_to_death = as.numeric(days_from_case_to_death),
+  mutate(days_from_case_to_death = as.numeric(date_of_1st_death - date_of_1st_case),
+         days_from_case_to_stay_home = as.numeric(date_of_stay_at_home_order - date_of_1st_case),
          cases_per_capita = confirmed_cases_through_date/population)
 
 # find most unique states in terms of mobility trends
 USStates <- find_euclidean_dist(data = USStates)
-
-# pivot from wide to long format
-USStates_Long <- USStates %>%
-  pivot_longer(cols = c("retail_recreation", "grocery_pharmacy", "parks",	
-                        "transit_stations",	"workplaces",	"residential"),
-               names_to = "type") %>%
-  group_by(date, type) %>%
-  mutate(outlier = ifelse(is_outlier(value), value, as.numeric(NA)),
-         high_low = case_when(
-           !is.na(outlier) & outlier > mean(value) ~ "High",
-           !is.na(outlier) & outlier < mean(value) ~ "Low",
-           TRUE ~ as.character(NA)),
-         mean = mean(value))
 
 # find clusters based on social distancing
 # standardize mobility data
@@ -74,7 +61,14 @@ USStates <- USStates %>%
   dplyr::mutate(cluster_k_means = k_means$cluster,
                 cluster_hierarchical = clusters)
 
-# calculate social distancing scores
+# convert cluster number to factor with nice labels
+USStates <- USStates %>%
+  mutate(cluster_k_means = case_when(
+    cluster_k_means == 1 ~ "Cluster 1",
+    cluster_k_means == 2 ~ "Cluster 2",
+    cluster_k_means == 3 ~ "Cluster 3"))
+
+# calculate social distancing scores and join to dataset
 scores <- US_standardized %>%
   mutate(social_dist_score = -1 * (retail_recreation + grocery_pharmacy + parks + transit_stations + workplaces) + residential) %>%
   select(state, date, social_dist_score)
@@ -84,5 +78,21 @@ USStates <- left_join(USStates, scores, by = c("state", "date"))
 # remove unneccessary data
 rm(k_means, clusters, distance, scores)
 
-# write .csv file
+# pivot from wide to long format
+USStates_Long <- USStates %>%
+  pivot_longer(cols = c("retail_recreation", "grocery_pharmacy", "parks",	
+                        "transit_stations",	"workplaces",	"residential"),
+               names_to = "type") %>%
+  group_by(date, type) %>%
+  mutate(outlier = ifelse(is_outlier(value), value, as.numeric(NA)),
+         high_low = case_when(
+           !is.na(outlier) & outlier > mean(value) ~ "High",
+           !is.na(outlier) & outlier < mean(value) ~ "Low",
+           TRUE ~ as.character(NA)),
+         mean = mean(value))
+
+# standardize mobility data
+US_standardized <- standardize_data(USStates)
+
+# write .csv file of data
 write_csv(USStates, path = "data/USStates.csv")
