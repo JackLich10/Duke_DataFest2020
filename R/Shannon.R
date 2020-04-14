@@ -130,9 +130,61 @@ plot_usmap(data = state_data_set, values = "date_of_stay_at_home_order")
   
 plot_usmap(data = state_data_set, values = "date_of_1st_case")
 
+first_day <- state_data_set %>% 
+  filter(date == "2020-03-29") %>% 
+  filter(state != "New York") %>% 
+  filter(state != "New Jersey")
+plot_usmap(data = first_day, values = "confirmed_cases_through_date")
+
 # Read in Data 
 
 state_area <- read_csv("data/Social Distancing - Area.csv")
 
 state_data_set <- left_join(state_data_set, state_area, by = "state")
+
+state_data_set <- state_data_set %>% 
+  mutate(pop_density = population/area)
+
+bad_response <- state_data_set %>% 
+  filter(response_stay_home > 47) %>% 
+  plyr::colwise(mean)(.) 
+
+state_data_set %>% 
+  filter(response_stay_home < 47) %>% 
+  plyr::colwise(mean)(.) %>% 
+  view()
+#States with the worst reponse times were those hit with corona first. 
+#They also seem to have better social distancing practices. They are very 
+#populated but also fairly large. The average dates of the responses are the
+# same for both groups, suggesting that those hit first did not know how to 
+# handle the novel virus at the time but have since adopted strong social 
+# distancing stances
+
+state_data_set %>% 
+  arrange(date_of_1st_case) %>% 
+  view()
+#West Virginia was last state to get covid, best response
+
+state_data_set %>% 
+  arrange(desc(pop_density)) %>% 
+  view()
+
+state_data_set %>% 
+  filter(state != "District of Columbia") %>% 
+  ggplot(aes(x = pop_density, y = confirmed_cases_through_date))+
+  geom_point()
+
+state_data_set %>% 
+  filter(state != "District of Columbia") %>% 
+  group_by(state, pop_density) %>% 
+  summarise(spread = confirmed_cases_through_date[2]-confirmed_cases_through_date[1]) %>% 
+  ggplot(aes(x = pop_density, y = spread))+
+  geom_point()
+#spread vs. pop-density
+
+state_data_set %>% 
+  filter(state != "District of Columbia") %>%
+  ggplot(aes(x = pop_density, y = cases_per_capita))+
+  geom_point()
+#pop density vs. cases per capita
 
