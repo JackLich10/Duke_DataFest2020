@@ -82,14 +82,14 @@ USStates_Long %>%
   head(60) %>%
   ggplot(aes(order = mean)) +
   geom_segment(aes(x = reorder(type, mean), xend = type, y = value/100, yend = mean/100)) +
-  geom_point(aes(x = reorder(type, mean), y = mean/100), color = "grey") +
-  geom_point(aes(x = reorder(type, mean), y = value/100, color = type)) +
+  geom_point(aes(x = reorder(type, mean), y = mean/100), color = "grey", size = 2.5) +
+  geom_point(aes(x = reorder(type, mean), y = value/100, color = type), size = 3) +
   facet_wrap(.~ state) +
   scale_color_discrete(labels = c("Transit Stations", "Retail/Recreation", "Workplaces", "Grocery/Pharmacy", "Parks", "Residential")) +
   scale_y_continuous(labels = scales::percent) +
   theme_ipsum(axis = "y") +
   theme(axis.text.x = element_blank(),
-        panel.spacing = unit(0.25, "lines"),
+        panel.spacing = unit(0.5, "lines"),
         legend.position = c(0.9, 0.175)) +
   labs(title = "US Covid-19 Mobility Trends",
        subtitle = "as of 3/29/20 (grey points correspond to average among all US states)",
@@ -107,14 +107,14 @@ USStates_Long %>%
   head(60) %>%
   ggplot(aes(order = mean)) +
   geom_segment(aes(x = reorder(type, mean), xend = type, y = value/100, yend = mean/100)) +
-  geom_point(aes(x = reorder(type, mean), y = mean/100), color = "grey") +
-  geom_point(aes(x = reorder(type, mean), y = value/100, color = type)) +
+  geom_point(aes(x = reorder(type, mean), y = mean/100), color = "grey", size = 2.5) +
+  geom_point(aes(x = reorder(type, mean), y = value/100, color = type), size = 3) +
   facet_wrap(.~ state) +
   scale_color_discrete(labels = c("Transit Stations", "Retail/Recreation", "Workplaces", "Grocery/Pharmacy", "Residential", "Parks")) +
   scale_y_continuous(labels = scales::percent) +
   theme_ipsum(axis = "y") +
   theme(axis.text.x = element_blank(),
-        panel.spacing = unit(0.25, "lines"),
+        panel.spacing = unit(0.5, "lines"),
         legend.position = c(0.9, 0.175)) +
   labs(title = "US Covid-19 Mobility Trends",
        subtitle = "as of 4/5/20 (grey points correspond to average among all US states)",
@@ -124,28 +124,49 @@ USStates_Long %>%
        caption = "Data courtesy of Google")
 
 USStates %>%
-  filter(state == "Indiana")
-
-a <- USStates %>%
-  select(state, date, cases_per_capita, euclidean_dist_change) %>%
   group_by(state) %>%
-  mutate(change_cases_per_capita = cases_per_capita - lag(cases_per_capita, order_by = date, default = 0)) 
-%>%
-  filter(date == "2020-04-05") %>%
+  mutate(change_cases_per_capita = cases_per_capita - lag(cases_per_capita, order_by = date, default = 0)) %>%
+  filter(date == "2020-03-29") %>%
   ggplot() +
-  geom_point(aes(x = euclidean_dist_change, y = change_cases_per_capita)) +
-  geom_text_repel(aes(x = euclidean_dist_change, y = change_cases_per_capita, label = ifelse(euclidean_dist_change > 2.5 | change_cases_per_capita > 0.002, state, "")),
+  geom_smooth(aes(x = change_cases_per_capita, y = euclidean_dist_change, color = as.factor(cluster_k_means)),
+              method = "lm", se = T) +
+  geom_point(aes(x = change_cases_per_capita, y = euclidean_dist_change, color = as.factor(cluster_k_means))) +
+  geom_text_repel(aes(x = change_cases_per_capita, y = euclidean_dist_change, label = ifelse(euclidean_dist_change > 2.5 | change_cases_per_capita > 0.002, state, "")),
                   family = hrbrthemes::font_an) +
+  facet_wrap(.~ cluster_k_means, scales = "free") +
+  guides(color = F) +
   theme_ipsum() +
-  labs(title = "How does changing mobility change number of cases?",
-       x = "Change in Standardized Euclidean Distance",
-       y = "Change in Cases/Capita")
+  labs(title = "How do changes in cases lead to changes in mobility",
+       subtitle = "Changes from 3/29 to 4/5",
+       y = "Change in Standardized Euclidean Distance",
+       x = "Change in Cases/Capita")
 
 USStates %>%
-  filter(date == "2020-03-29") %>%
-  mutate(color = case_when(
-    euclidean_dist_change > 1.5 ~ "Large Change in Mobility",
-    TRUE ~ "About the Same")) %>%
+  pivot_longer(cols = c(retail_recreation:residential), names_to = "type") %>%
   ggplot() +
-  geom_col(aes(x = euclidean_dist_change, y = reorder(state, euclidean_dist_change)))
+  geom_boxplot(aes(x = cluster_k_means, y = value/100, fill = as.factor(cluster_k_means))) +
+  facet_wrap(.~ type, scales = "free") +
+  scale_y_continuous(labels = scales::percent) +
+  guides(fill = F) +
+  theme_ipsum() +
+  labs(title = "Breakdown of Clusters",
+       x = "Cluster",
+       y = "%Change in Mobility Compared to Baseline")
+
+USStates <- USStates %>%
+  mutate(days_from_case_to_death = as.numeric(days_from_case_to_death))
+
+USStates %>%
+  pivot_longer(cols = c(cases_per_capita, days_from_case_to_death), names_to = "type") %>%
+  mutate(type = case_when(
+    type == "cases_per_capita" ~ "Cases/Capita",
+    type == "days_from_case_to_death" ~ "# of Days from 1st Case to 1st Death")) %>%
+  ggplot() +
+  geom_boxplot(aes(x = cluster_k_means, y = value, fill = as.factor(cluster_k_means))) +
+  facet_wrap(.~ type, scales = "free") +
+  guides(fill = F) +
+  theme_ipsum() +
+  labs(title = "Breakdown of Clusters",
+       x = "Cluster",
+       y = "%Change in Mobility Compared to Baseline")
 

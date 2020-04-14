@@ -4,12 +4,10 @@ library(tidyverse)
 standardize_data <- function(data) {
   data_copy <- data
   
-  for (i in c(nrow(data)/2, nrow(data))) {
-    # normalization of mobility trends (subtracting mean, dividing by standard deviation) (must be quantitative data)
-    means <- apply(data[(i-50):i, 3:8], 2, mean)
-    stdevs <- apply(data[(i-50):i, 3:8], 2, sd)
-    data_copy[(i-50):i, 3:8] <- as.data.frame(scale(data[(i-50):i, 3:8], means, stdevs))
-  }
+  # normalization of mobility trends (subtracting mean, dividing by standard deviation) (must be quantitative data)
+  means <- apply(data[, 3:8], 2, mean)
+  stdevs <- apply(data[, 3:8], 2, sd)
+  data_copy[, 3:8] <- as.data.frame(scale(data[, 3:8], means, stdevs))
   return(data_copy)
 }
 
@@ -26,7 +24,7 @@ find_euclidean_dist <- function(data) {
   
   # find euclidean distance as a measure of how each state changed mobility patterns from 3/29 to 4/5
   for (i in seq(from = 1, to = 101, by = 2)) {
-    euclid_dist_change[ceiling(i/2), 2] <- as.numeric(dist(rbind(standardized_copy[i,3:8], standardized_copy[i+1,3:8])))
+    euclid_dist_change[ceiling(i/2), 2] <- as.numeric(dist(rbind(standardized_copy[i, 3:8], standardized_copy[i+1,3:8])))
   }
   
   # find euclidean distance from avg mobility trends for all states
@@ -39,7 +37,7 @@ find_euclidean_dist <- function(data) {
                         euclidean_dist_avg = as.numeric(rep(NA, nrow(data))))
   
   for (i in 1:nrow(data)) {
-    euclid_dist[i, 3] <- as.numeric(dist(rbind(avg_mobility_US[ceiling(2*i/nrow(data)),2:7], standardized[i,3:8])))
+    euclid_dist[i, 3] <- as.numeric(dist(rbind(avg_mobility_US[ceiling(2*i/nrow(data)), 2:7], standardized[i, 3:8])))
   }
   
   # join euclidean distance by state and remove unnecessary dataframes
