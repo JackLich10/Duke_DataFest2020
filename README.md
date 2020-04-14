@@ -4,9 +4,9 @@
 
 Data Dictionary:
 
-Number of Observations:
+Number of Observations: 102
 
-Number of Variables:
+Number of Variables: 28
 
 Description of Variables:
 
@@ -27,3 +27,45 @@ Note that for the following variables, each mobility trend is combared to a base
 `workplaces`: Mobility trends for places of work.
 
 `residential`: Mobility trends for places of residence.
+
+`stay_at_home_order`: Type of stay at home order
+
+`date_of_stay_at_home_order`: Date in which stay at home order is declared
+
+`mandatory_quarantine_for_travelers`: Type of travel restrictions
+
+`non_essential_business_closures`: Type of business closures
+
+`large_gatherings_ban`: Type of large gatherings ban
+
+`state_mandated_school_closures`: Date of state mandated school closure
+
+`bar_restaurant_limits`: Type of restaurant limitations
+
+`emergency_declaration`: Date of emergency declaration
+
+`population`: Population
+
+`confirmed_cases_through_date`: Confirmed cases through date
+
+`days_from_case_to_death`: Number of days from 1st case to 1st death
+
+`days_from_case_to_stay_home`: Number of days from 1st case to stay at home order
+
+`cases_per_capita`: Confirmed cases divided by population size
+
+`euclidean_dist_avg`: Euclidean distance of social mobility from average
+
+`euclidean_dist_change`: Change in euclidean distance of social mobility from week to week
+
+`cluster_k_means`: Assigned k-means cluster based on social mobility
+
+`cluster_hierarchical`: Assigned hierarchical cluster based on social mobility
+
+`social_dist_score`: Calculated by the following (NOTE: each value is normalized by subtracting the mean and dividing by standard deviation):
+
+`social_dist_score` = -1*(`retail_recreation`+`grocery_pharmacy`+`parks`+`transit_stations`+`workplaces`)+`residential`
+
+
+
+
