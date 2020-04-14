@@ -130,4 +130,9 @@ plot_usmap(data = state_data_set, values = "date_of_stay_at_home_order")
   
 plot_usmap(data = state_data_set, values = "date_of_1st_case")
 
+# Read in Data 
+
+state_area <- read_csv("data/Social Distancing - Area.csv")
+
+state_data_set <- left_join(state_data_set, state_area, by = "state")
 
