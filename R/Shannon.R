@@ -6,8 +6,9 @@ library(hrbrthemes)
 
 source("R/Helpers.R")
 
+source("R/Data_Cleaning_Manip.R")
 #read in data 
-state_data_set <- read_csv("data/USStates.csv")
+USStates <- read_csv("data/USStates.csv")
 
 # Exploratory Data Analysis -----------------------------------------------
 
@@ -125,7 +126,7 @@ state_data_set %>%
 # and 4 times the population accounting for 16 times more corona cases
 
 #Map of stay at home orders shows midwest is not responsive, and that
-#Washington state failed to respond first despite being firse case
+#Washington state failed to respond first despite being first case
 plot_usmap(data = state_data_set, values = "date_of_stay_at_home_order")
   
 plot_usmap(data = state_data_set, values = "date_of_1st_case")
@@ -188,3 +189,49 @@ state_data_set %>%
   geom_point()
 #pop density vs. cases per capita
 
+#Mapping clusters on map
+plot_usmap(data = state_data_set, values = "cluster_k_means")
+
+#Cases vs. Social Mobility
+state_data_set %>%
+  filter(date == "2020-03-29") %>% 
+  ggplot() +
+  geom_smooth(aes(x = confirmed_cases_through_date, y = social_dist_score, 
+                  color = as.factor(cluster_k_means)), method = "lm", se = T) +
+  geom_point(aes(x = confirmed_cases_through_date, y = social_dist_score, color = as.factor(cluster_k_means))) +
+  geom_text_repel(aes(x = confirmed_cases_through_date, y = social_dist_score, label = ifelse(social_dist_score > 8 | confirmed_cases_through_date > 10000, state, "")),
+                  family = hrbrthemes::font_an) +
+  facet_wrap(.~ cluster_k_means, scales = "free") +
+  guides(color = F) +
+  theme_ipsum() +
+  labs(title = "How do changes in cases lead to changes in mobility",
+       subtitle = "Based on mobility data from 3/29",
+       y = "Change in Standardized Social Mobility",
+       x = "Cases on 3/29")
+
+cluster_1_means <- state_data_set %>% 
+  filter(cluster_k_means == "Cluster 1") %>% 
+  plyr::colwise(mean)(.)
+
+cluster_2_means <- state_data_set %>% 
+  filter(cluster_k_means == "Cluster 2") %>% 
+  plyr::colwise(mean)(.)
+
+cluster_3_means <- state_data_set %>% 
+  filter(cluster_k_means == "Cluster 3") %>% 
+  plyr::colwise(mean)(.)
+
+#Cluster 1 has the most cases, most cases/capita, best social distancing score,
+# and worst response times
+
+plot_usmap(data = state_data_set, values = "social_dist_score")+
+  scale_fill_steps2(
+    low = "red",
+    mid = "white",
+    high = "blue",
+    midpoint = 0)+
+  labs(fill = "")
+
+# lm
+
+lm(social_dist_score ~ resp_stay_home + resp_school + resp_emeregency + confirmed_cases_through_date + population + )
