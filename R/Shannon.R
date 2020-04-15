@@ -233,5 +233,19 @@ plot_usmap(data = state_data_set, values = "social_dist_score")+
   labs(fill = "")
 
 # lm
+USStates_wide <- read_csv("data/USStates_Wide.csv")
 
-lm(social_dist_score ~ resp_stay_home + resp_school + resp_emeregency + confirmed_cases_through_date + population + )
+USStates_wide <- USStates_wide %>% 
+  mutate(resp_home = as.numeric(date_of_stay_at_home_order - date_of_1st_case),
+         resp_school = as.numeric(state_mandated_school_closures - date_of_1st_case),
+         resp_emer = as.numeric(emergency_declaration - date_of_1st_case))
+
+USStates_wide_na <- USStates_wide %>% 
+  filter(resp_home != is.na(resp_home))
+
+lm_everythang <- lm(`social_dist_score_2020-03-29` ~ resp_home + resp_school + resp_emer + `confirmed_cases_through_date_2020-03-29` + population + days_from_case_to_death, data = USStates_wide_na)
+
+lm_step_everythang <- step(lm_everythang, direction = "backward")
+
+glance(lm(`social_dist_score_2020-03-29` ~ resp_emer + `confirmed_cases_through_date_2020-03-29`, data = USStates_wide_na))
+
