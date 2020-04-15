@@ -8,7 +8,7 @@ source("R/Helpers.R")
 
 source("R/Data_Cleaning_Manip.R")
 #read in data 
-state_data_set <- read_csv("data/USStates.csv")
+USStates <- read_csv("data/USStates.csv")
 
 # Exploratory Data Analysis -----------------------------------------------
 
@@ -126,7 +126,7 @@ state_data_set %>%
 # and 4 times the population accounting for 16 times more corona cases
 
 #Map of stay at home orders shows midwest is not responsive, and that
-#Washington state failed to respond first despite being firse case
+#Washington state failed to respond first despite being first case
 plot_usmap(data = state_data_set, values = "date_of_stay_at_home_order")
   
 plot_usmap(data = state_data_set, values = "date_of_1st_case")
@@ -223,3 +223,15 @@ cluster_3_means <- state_data_set %>%
 
 #Cluster 1 has the most cases, most cases/capita, best social distancing score,
 # and worst response times
+
+plot_usmap(data = state_data_set, values = "social_dist_score")+
+  scale_fill_steps2(
+    low = "red",
+    mid = "white",
+    high = "blue",
+    midpoint = 0)+
+  labs(fill = "")
+
+# lm
+
+lm(social_dist_score ~ resp_stay_home + resp_school + resp_emeregency + confirmed_cases_through_date + population + )
