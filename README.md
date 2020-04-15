@@ -4,13 +4,13 @@
 
 Data Dictionary:
 
-Number of Observations: 102
+Number of Observations: 51
 
 Number of Variables: 28
 
 Description of Variables:
 
-`country` or `state`: Identifying variable for a particular country or state's google mobility trend data
+`state`: Identifying variable for a particular state's google mobility trend data
 
 `date`: Date of community mobility report
 
@@ -64,7 +64,7 @@ Note that for the following variables, each mobility trend is combared to a base
 
 `social_dist_score`: Calculated by the following (NOTE: each value is normalized by subtracting the mean and dividing by standard deviation):
 
-`social_dist_score` = -1*(`retail_recreation`+`grocery_pharmacy`+`parks`+`transit_stations`+`workplaces`)+`residential`
+= -1*(`retail_recreation`+`grocery_pharmacy`+`parks`+`transit_stations`+`workplaces`)+`residential`
 
 
 
