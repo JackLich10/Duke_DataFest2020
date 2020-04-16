@@ -30,14 +30,19 @@ ConfirmedCases <- read_csv("data/Social Distancing - Sheet4.csv") %>%
 USStates <- left_join(USStates, USStateActions, by = "state") %>%
   mutate_at(vars(starts_with("date"), state_mandated_school_closures, emergency_declaration), mdy) %>%
   left_join(ConfirmedCases, by = c("state", "date"))
-rm(USStateActions, ConfirmedCases)
+
+# read in data for state areas
+USStates_Areas <- read_csv("data/Social Distancing - Area.csv")
+
+USStates <- left_join(USStates, USStates_Areas, by = "state") %>%
+  mutate(pop_density = population/area)
+
+rm(USStates_Areas, USStateActions, ConfirmedCases)
 
 # find days between 1st case and 1st death
 USStates <- USStates %>%
   mutate(days_from_case_to_death = as.numeric(date_of_1st_death - date_of_1st_case),
-         response_stay_home = case_when(
-           !is.na(date_of_stay_at_home_order) ~ as.numeric(date_of_stay_at_home_order - date_of_1st_case),
-           TRUE ~ as.numeric(Sys.Date() - date_of_1st_case)),
+         response_stay_home = as.numeric(date_of_stay_at_home_order - date_of_1st_case),
          response_school = as.numeric(state_mandated_school_closures - date_of_1st_case),
          response_emergency = as.numeric(emergency_declaration - date_of_1st_case),
          cases_per_capita = confirmed_cases/population)
@@ -98,7 +103,8 @@ USStates_Long <- USStates %>%
 # pivot from long to wide format
 USStates_Wide <- USStates %>%
   pivot_wider(names_from = date, values_from = c(retail_recreation:residential, confirmed_cases, cases_per_capita, euclidean_dist_avg, cluster_k_means, cluster_hierarchical, social_dist_score)) %>%
-  mutate(avg_response_time = (response_emergency + response_school + response_stay_home)/3)
+  mutate(avg_response_time = (response_emergency + response_school + response_stay_home)/3,
+         avg_dist_score = (`social_dist_score_2020-03-29` + `social_dist_score_2020-04-05`)/2)
 
 # standardize mobility data
 US_standardized <- standardize_data(USStates)

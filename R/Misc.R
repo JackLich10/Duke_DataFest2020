@@ -17,12 +17,12 @@ USStates %>%
 
 USStates %>%
   ggplot() +
-  geom_col(aes(y = reorder(state, days_from_case_to_stay_home), x = days_from_case_to_stay_home))
+  geom_col(aes(y = reorder(state, response_stay_home), x = response_stay_home))
 
 USStates %>%
   ggplot() +
-  geom_point(aes(x = days_from_case_to_stay_home, y = social_dist_score, color = as.factor(cluster_k_means))) +
-  geom_text_repel(aes(x = days_from_case_to_stay_home, y = social_dist_score, label = ifelse(is_outlier(days_from_case_to_stay_home) | is_outlier(social_dist_score), state, "")),
+  geom_point(aes(x = response_stay_home, y = social_dist_score, color = as.factor(cluster_k_means))) +
+  geom_text_repel(aes(x = response_stay_home, y = social_dist_score, label = ifelse(is_outlier(response_stay_home) | is_outlier(social_dist_score), state, "")),
                 family = hrbrthemes::font_an) +
   facet_wrap(.~ date)
 
@@ -34,7 +34,7 @@ pd <- USStates %>%
 
 pd %>%
   ggplot() +
-  geom_col(aes(y = order, x = social_dist_score, fill = as.factor(cluster_k_means))) +
+  geom_col(aes(y = order, x = social_dist_score, fill = cluster_k_means)) +
   facet_wrap(.~ date, scales = "free") +
   scale_y_continuous(breaks = pd$order, labels = pd$state, expand = c(0, 0)) +
   guides(fill = F) +
@@ -64,7 +64,7 @@ USStates %>%
        subtitle = "Changes from 3/29 to 4/5",
        y = "Change in Social Distancing Score",
        x = "Change in Cases/Capita",
-       color = "Cluster")
+       color = NULL)
 
 USStates %>%
   select(state, date, cases_per_capita, social_dist_score, cluster_k_means) %>%
@@ -99,4 +99,8 @@ USStates %>%
        y = "Social Distancing Score",
        x = "Cases/Capita",
        color = NULL)
+
+USStates_Wide %>%
+  ggplot() +
+  geom_col(aes(x = avg_response_time, y = reorder(state, avg_response_time), fill = governor))
 

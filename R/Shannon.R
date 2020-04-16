@@ -1,77 +1,54 @@
+# load libraries
 library(tidyverse)
 library(broom)
 library(dplyr)
 library(ggrepel)
 library(hrbrthemes)
+library(usmap)
 
-source("R/Helpers.R")
-
+# source data and helper functions (this will populate environment with data)
 source("R/Data_Cleaning_Manip.R")
-#read in data 
-USStates <- read_csv("data/USStates.csv")
-
-# Exploratory Data Analysis -----------------------------------------------
 
 # Linear Model Exploration ------------------------------------------------
-lm_total <- lm(confirmed_cases_through_date ~ retail_recreation + date +
+lm_total <- lm(confirmed_cases ~ retail_recreation + date +
                     grocery_pharmacy + parks + transit_stations + workplaces + 
-                    residential + population, data = state_data_set)
+                    residential + population, data = USStates)
 lm_step <- step(lm_total, direction = "backward")
 
-lm_efficient <- lm(confirmed_cases_through_date ~ grocery_pharmacy + workplaces
+lm_efficient <- lm(confirmed_cases ~ grocery_pharmacy + workplaces
                    + parks + retail_recreation + population, 
-                   data = state_data_set)
+                   data = USStates)
 tidy(lm_efficient)
 
 glance(lm_efficient) %>% 
   pull(adj.r.squared)
-#note adjusted r squared is only .2578
+#note adjusted r squared is .2578
 
-lm_factors <- lm(confirmed_cases_through_date ~ population + date_of_1st_case + 
+lm_factors <- lm(confirmed_cases ~ population + date_of_1st_case + 
      date_of_1st_death + date_of_stay_at_home_order + 
      state_mandated_school_closures + emergency_declaration, 
-     data = state_data_set )
+     data = USStates )
 
 lm_step_2 <- step(lm_factors, direction = "backward")
 
-lm_efficient_2 <- lm(confirmed_cases_through_date ~ population + date +
-                       date_of_stay_at_home_order, data = state_data_set)
+lm_efficient_2 <- lm(confirmed_cases ~ population + date +
+                       date_of_stay_at_home_order, data = USStates)
 
 tidy(lm_efficient_2)
 glance(lm_efficient_2) %>% 
   pull(adj.r.squared)
-#Note adjusted r squared sucks = .1723
+#Note adjusted r squared = .1847
 
 # Looking at Response Time -------------------------------------------------
-# Create response time variables
-state_data_set <- state_data_set %>% 
-  mutate(response_stay_home = date_of_stay_at_home_order - date_of_1st_case,
-         response_school = state_mandated_school_closures - date_of_1st_case,
-         response_emergency = emergency_declaration - date_of_1st_case
-         ) 
-# Note that 6/51 states/DC do not have stay at home orders
-state_data_set %>% 
-  filter(response_stay_home != is.na(response_stay_home)) %>% 
-  select(response_stay_home)
 
-# Attempt to plot
-# pivot from wide to long format
-state_data_set_long <- state_data_set %>%
-  pivot_longer(cols = c("response_stay_home", "response_school", 
-                        "response_emergency")
-               names_to = "response_type") %>%
-  group_by(date, response_type) %>%
-  mutate(outlier = ifelse(is_outlier(value), value, as.numeric(NA)),
-         high_low = case_when(
-           !is.na(outlier) & outlier > mean(value) ~ "High",
-           !is.na(outlier) & outlier < mean(value) ~ "Low",
-           TRUE ~ as.character(NA)),
-         mean = mean(value))
+# Note that 6/51 states/DC do not have stay at home orders
+USStates_Wide %>%
+  filter(is.na(response_stay_home)) %>%
+  nrow()
 
 # Exploratory Data Analysis -----------------------------------------------
-
 # wide to long conversion
-state_data_set_long <- state_data_set %>%
+state_data_set_long <- USStates %>%
   filter(date == "2020-03-29") %>%
   pivot_longer(cols = c(response_stay_home, response_school, response_emergency), 
                names_prefix = "response_",
@@ -101,19 +78,11 @@ state_data_set_long %>%
        y = "Response Time From Date of 1st Case")
 
 # Closer look at NA stay at home states
-
-state_data_set %>% 
+USStates %>% 
   filter(is.na(response_stay_home)) %>% 
   group_by(date) %>% 
   summarise(avg_per_capita = mean(cases_per_capita),
-            avg_cases = mean(confirmed_cases_through_date),
-            avg_pop = mean(population))
-
-state_data_set %>% 
-  filter(response_stay_home != is.na(response_stay_home)) %>% 
-  group_by(date) %>% 
-  summarise(avg_per_capita = mean(cases_per_capita),
-            avg_cases = mean(confirmed_cases_through_date),
+            avg_cases = mean(confirmed_cases),
             avg_pop = mean(population))
   
   .000352/.000123
@@ -125,32 +94,24 @@ state_data_set %>%
 # three times more corona virus per capita than those that did not
 # and 4 times the population accounting for 16 times more corona cases
 
-#Map of stay at home orders shows midwest is not responsive, and that
-#Washington state failed to respond first despite being first case
-plot_usmap(data = state_data_set, values = "date_of_stay_at_home_order")
+# Map of stay at home orders shows midwest is not responsive, and that
+# Washington state failed to respond first despite being first case
+plot_usmap(data = USStates, values = "response_stay_home")
   
-plot_usmap(data = state_data_set, values = "date_of_1st_case")
+plot_usmap(data = USStates, values = "date_of_1st_case")
 
-first_day <- state_data_set %>% 
+first_day <- USStates %>% 
   filter(date == "2020-03-29") %>% 
   filter(state != "New York") %>% 
   filter(state != "New Jersey")
-plot_usmap(data = first_day, values = "confirmed_cases_through_date")
+plot_usmap(data = first_day, values = "confirmed_cases")
 
-# Read in Data 
-
-state_area <- read_csv("data/Social Distancing - Area.csv")
-
-state_data_set <- left_join(state_data_set, state_area, by = "state")
-
-state_data_set <- state_data_set %>% 
-  mutate(pop_density = population/area)
-
-bad_response <- state_data_set %>% 
+# response times
+bad_response <- USStates %>% 
   filter(response_stay_home > 47) %>% 
   plyr::colwise(mean)(.) 
 
-state_data_set %>% 
+USStates %>% 
   filter(response_stay_home < 47) %>% 
   plyr::colwise(mean)(.) %>% 
   view()
@@ -161,45 +122,45 @@ state_data_set %>%
 # handle the novel virus at the time but have since adopted strong social 
 # distancing stances
 
-state_data_set %>% 
+USStates %>%
   arrange(date_of_1st_case) %>% 
   view()
-#West Virginia was last state to get covid, best response
+# West Virginia was last state to get covid, best response
 
-state_data_set %>% 
+USStates %>%
   arrange(desc(pop_density)) %>% 
   view()
 
-state_data_set %>% 
+USStates %>% 
   filter(state != "District of Columbia") %>% 
-  ggplot(aes(x = pop_density, y = confirmed_cases_through_date))+
+  ggplot(aes(x = pop_density, y = confirmed_cases))+
   geom_point()
 
-state_data_set %>% 
+USStates %>% 
   filter(state != "District of Columbia") %>% 
   group_by(state, pop_density) %>% 
-  summarise(spread = confirmed_cases_through_date[2]-confirmed_cases_through_date[1]) %>% 
+  summarise(spread = confirmed_cases[2]-confirmed_cases[1]) %>% 
   ggplot(aes(x = pop_density, y = spread))+
   geom_point()
 #spread vs. pop-density
 
-state_data_set %>% 
+USStates %>% 
   filter(state != "District of Columbia") %>%
   ggplot(aes(x = pop_density, y = cases_per_capita))+
   geom_point()
 #pop density vs. cases per capita
 
 #Mapping clusters on map
-plot_usmap(data = state_data_set, values = "cluster_k_means")
+plot_usmap(data = USStates, values = "cluster_k_means")
 
 #Cases vs. Social Mobility
-state_data_set %>%
+USStates %>%
   filter(date == "2020-03-29") %>% 
   ggplot() +
-  geom_smooth(aes(x = confirmed_cases_through_date, y = social_dist_score, 
-                  color = as.factor(cluster_k_means)), method = "lm", se = T) +
-  geom_point(aes(x = confirmed_cases_through_date, y = social_dist_score, color = as.factor(cluster_k_means))) +
-  geom_text_repel(aes(x = confirmed_cases_through_date, y = social_dist_score, label = ifelse(social_dist_score > 8 | confirmed_cases_through_date > 10000, state, "")),
+  geom_smooth(aes(x = confirmed_cases, y = social_dist_score, 
+                  color = cluster_k_means), method = "lm", se = T) +
+  geom_point(aes(x = confirmed_cases, y = social_dist_score, color = cluster_k_means)) +
+  geom_text_repel(aes(x = confirmed_cases, y = social_dist_score, label = ifelse(social_dist_score > 8 | confirmed_cases > 10000, state, "")),
                   family = hrbrthemes::font_an) +
   facet_wrap(.~ cluster_k_means, scales = "free") +
   guides(color = F) +
@@ -209,43 +170,39 @@ state_data_set %>%
        y = "Change in Standardized Social Mobility",
        x = "Cases on 3/29")
 
-cluster_1_means <- state_data_set %>% 
+cluster_1_means <- USStates %>% 
   filter(cluster_k_means == "Cluster 1") %>% 
   plyr::colwise(mean)(.)
 
-cluster_2_means <- state_data_set %>% 
+cluster_2_means <- USStates %>% 
   filter(cluster_k_means == "Cluster 2") %>% 
   plyr::colwise(mean)(.)
 
-cluster_3_means <- state_data_set %>% 
+cluster_3_means <- USStates %>% 
   filter(cluster_k_means == "Cluster 3") %>% 
   plyr::colwise(mean)(.)
 
 #Cluster 1 has the most cases, most cases/capita, best social distancing score,
 # and worst response times
 
-plot_usmap(data = state_data_set, values = "social_dist_score")+
+plot_usmap(data = USStates, values = "social_dist_score") +
   scale_fill_steps2(
     low = "red",
     mid = "white",
     high = "blue",
-    midpoint = 0)+
-  labs(fill = "")
+    midpoint = 0) +
+  theme(legend.position = "bottom") +
+  labs(fill = "Social Distancing Score")
 
-# lm
-USStates_wide <- read_csv("data/USStates_Wide.csv")
+# lm to predict avg_dist_score for each state
+to_model <- USStates_Wide %>%
+  select(c(avg_dist_score, governor, days_from_case_to_death:response_emergency, population, `confirmed_cases_2020-03-29`, `confirmed_cases_2020-04-05`))
 
-USStates_wide <- USStates_wide %>% 
-  mutate(resp_home = as.numeric(date_of_stay_at_home_order - date_of_1st_case),
-         resp_school = as.numeric(state_mandated_school_closures - date_of_1st_case),
-         resp_emer = as.numeric(emergency_declaration - date_of_1st_case))
+lm_everythang <- lm(avg_dist_score ~ ., data = to_model)
 
-USStates_wide_na <- USStates_wide %>% 
-  filter(resp_home != is.na(resp_home))
-
-lm_everythang <- lm(`social_dist_score_2020-03-29` ~ resp_home + resp_school + resp_emer + `confirmed_cases_through_date_2020-03-29` + population + days_from_case_to_death, data = USStates_wide_na)
+summary(lm_everythang)
 
 lm_step_everythang <- step(lm_everythang, direction = "backward")
 
-glance(lm(`social_dist_score_2020-03-29` ~ resp_emer + `confirmed_cases_through_date_2020-03-29`, data = USStates_wide_na))
+summary(lm_step_everythang)
 

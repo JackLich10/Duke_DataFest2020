@@ -14,7 +14,7 @@ Description of Variables:
 
 `date`: Date of community mobility report
 
-Note that for the following variables, each mobility trend is combared to a baseline, defined as the median value, for the corresponding day of the week, during the 5-week period Jan 3–Feb 6, 2020.
+Note that for the following variables, each mobility trend is compared to a baseline, defined as the median value, for the corresponding day of the week, during the 5-week period Jan 3–Feb 6, 2020.
 
 `retail_recreation`: Mobility trends for places like restaurants, cafes, shopping centers, theme parks, museums, libraries, and movie theaters.
 
