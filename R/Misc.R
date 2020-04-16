@@ -7,7 +7,7 @@ USStates_Wide %>%
 
 USStates %>%
   ggplot() +
-  geom_boxplot(aes(x = as.factor(date), y = social_dist_score, fill = as.factor(cluster_k_means))) +
+  geom_boxplot(aes(x = as.factor(date), y = social_dist_score, fill = cluster_k_means)) +
   facet_wrap(.~ cluster_k_means) +
   guides(fill = F) +
   theme_ipsum() +
@@ -15,9 +15,12 @@ USStates %>%
        x = "Date",
        y = "Social Distancing Score")
 
+library(ggalt)
+
 USStates %>%
   ggplot() +
-  geom_col(aes(y = reorder(state, response_stay_home), x = response_stay_home))
+  geom_lollipop(aes(x = reorder(state, response_stay_home), y = response_stay_home)) +
+  coord_flip()
 
 USStates %>%
   ggplot() +

@@ -23,21 +23,16 @@ USStates_Long %>%
 
 # Changes in mobility
 USStates %>%
-  group_by(state) %>%
-  mutate(diff_score = case_when(
-    date == "2020-03-29" ~ social_dist_score - lead(social_dist_score, order_by = date, default = 0),
-    date == "2020-04-05" ~ social_dist_score - lag(social_dist_score, order_by = date, default = 0)),
-    color = case_when(
-      date == "2020-03-29" & diff_score > 1.5 ~ "Less Distancing",
-      date == "2020-03-29" & diff_score < -1.5 ~ "More Distancing",
-      date == "2020-04-05" & diff_score > 1.5 ~ "More Distancing",
-      date == "2020-04-05" & diff_score < -1.5 ~ "Less Distancing",
+  mutate(color = case_when(
+      diff_score > 1.5 ~ "More Distancing",
+      diff_score < -1.5 ~ "Less Distancing",
       TRUE ~ "About the Same")) %>%
   ggplot() +
   geom_line(aes(x = date, y = social_dist_score, group = state, color = color, alpha = 0.9)) +
   geom_point(aes(x = date, y = social_dist_score, alpha = 0.9)) +
   geom_text_repel(aes(x = date, y = social_dist_score, label = ifelse(date == "2020-03-29", state, "")), 
                   size = 3, family = hrbrthemes::font_an) +
+  scale_x_date(date_breaks = "3 days", date_labels = "%m/%d") +
   scale_color_manual(values = c("grey", "red", "blue")) +
   facet_wrap(.~ color) +
   guides(color = F, alpha = F) +
@@ -74,12 +69,13 @@ USStates_Avg %>%
   mutate(type = factor(type, levels = c("avg_transit", "avg_retail_rec", "avg_workplaces", "avg_grocery_phar", "avg_parks", "avg_residential")),
          state = factor(state, levels = state[order(-avg_dist_score)])) %>%
   arrange(desc(avg_dist_score)) %>%
-  head(60) %>%
+  head(30) %>%
   ggplot(aes(order = mean)) +
   geom_segment(aes(x = reorder(type, mean), xend = type, y = value/100, yend = mean/100)) +
-  geom_point(aes(x = reorder(type, mean), y = mean/100), color = "grey", size = 2.5) +
-  geom_point(aes(x = reorder(type, mean), y = value/100, color = type), size = 3.5) +
-  geom_text(aes(x = 1.5, y = ifelse(state == "District of Columbia", 0.05, 0), label = ifelse(state == "District of Columbia", paste("Distancing Score: ", round(avg_dist_score, 2), sep = "\n"), round(avg_dist_score, 2))), family = hrbrthemes::font_an, size = 3) +
+  geom_point(aes(x = reorder(type, mean), y = mean/100), color = "grey", size = 2) +
+  geom_point(aes(x = reorder(type, mean), y = value/100, color = type), size = 4) +
+  geom_text(aes(x = 1.5, y = ifelse(state == "District of Columbia", 0.05, 0), label = ifelse(state == "District of Columbia", paste("Distancing Score: ", round(avg_dist_score, 2), sep = "\n"), round(avg_dist_score, 2))), 
+            family = hrbrthemes::font_an, size = 3.5, fontface = "bold") +
   facet_wrap(.~ state) +
   scale_y_continuous(labels = scales::percent) +
   scale_color_discrete(labels = c("Transit Stations", "Retail/Recreation", "Workplaces", "Grocery/Pharmacy", "Parks", "Residential")) +
@@ -87,7 +83,7 @@ USStates_Avg %>%
   theme(axis.text.x = element_blank(),
         panel.spacing = unit(0.5, "lines"),
         legend.position = c(0.9, 0.175)) +
-  labs(title = "Leading 10 States in Social Distancing",
+  labs(title = "Leading 5 States in Social Distancing",
        subtitle = "(grey points correspond to average among all US states)",
        x = NULL,
        y = "%Change in Mobility Compared to Baseline",
@@ -98,12 +94,13 @@ USStates_Avg %>%
   mutate(type = factor(type, levels = c("avg_transit", "avg_retail_rec", "avg_workplaces", "avg_grocery_phar", "avg_parks", "avg_residential")),
          state = factor(state, levels = state[order(avg_dist_score)])) %>%
   arrange(avg_dist_score) %>%
-  head(60) %>%
+  head(30) %>%
   ggplot(aes(order = mean)) +
   geom_segment(aes(x = reorder(type, mean), xend = type, y = value/100, yend = mean/100)) +
-  geom_point(aes(x = reorder(type, mean), y = mean/100), color = "grey", size = 2.5) +
-  geom_point(aes(x = reorder(type, mean), y = value/100, color = type), size = 3.5) +
-  geom_text(aes(x = 1.5, y = ifelse(state == "South Dakota", 0.95, 0.9), label = ifelse(state == "South Dakota", paste("Distancing Score: ", round(avg_dist_score, 2), sep = "\n"), round(avg_dist_score, 2))), family = hrbrthemes::font_an, size = 3) +
+  geom_point(aes(x = reorder(type, mean), y = mean/100), color = "grey", size = 2) +
+  geom_point(aes(x = reorder(type, mean), y = value/100, color = type), size = 4) +
+  geom_text(aes(x = 1.5, y = ifelse(state == "South Dakota", 0.95, 0.9), label = ifelse(state == "South Dakota", paste("Distancing Score: ", round(avg_dist_score, 2), sep = "\n"), round(avg_dist_score, 2))), 
+            family = hrbrthemes::font_an, size = 3.5, fontface = "bold") +
   facet_wrap(.~ state) +
   scale_y_continuous(labels = scales::percent) +
   scale_color_discrete(labels = c("Transit Stations", "Retail/Recreation", "Workplaces", "Grocery/Pharmacy", "Parks", "Residential")) +
@@ -111,13 +108,14 @@ USStates_Avg %>%
   theme(axis.text.x = element_blank(),
         panel.spacing = unit(0.5, "lines"),
         legend.position = c(0.9, 0.175)) +
-  labs(title = "Bottom 10 States in Social Distancing",
+  labs(title = "Bottom 5 States in Social Distancing",
        subtitle = "(grey points correspond to average among all US states)",
        x = NULL,
        y = "%Change in Mobility Compared to Baseline",
        color = NULL,
        caption = "Data from Google Mobility Reports")
 
+# closer look at clusters
 USStates %>%
   pivot_longer(cols = c(retail_recreation:residential), names_to = "type") %>%
   ggplot() +

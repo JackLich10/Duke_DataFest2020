@@ -21,9 +21,8 @@ USStateActions <- read_csv("data/Social Distancing - State Actions.csv") %>%
   janitor::clean_names()
 
 # read in confirmed cases
-ConfirmedCases <- read_csv("data/Social Distancing - Sheet4.csv") %>%
-  select(1:3) %>%
-  pivot_longer(cols = c(2:3), names_to = "date", values_to = "confirmed_cases", names_prefix = "cases_through") %>%
+ConfirmedCases <- read_csv("data/Social Distancing - State Cases.csv") %>%
+  pivot_longer(cols = c(2:4), names_to = "date", values_to = "confirmed_cases", names_prefix = "cases_through") %>%
   mutate(date = mdy(date))
 
 # join dataframes and remove unnecessary data
@@ -36,7 +35,6 @@ USStates_Areas <- read_csv("data/Social Distancing - Area.csv")
 
 USStates <- left_join(USStates, USStates_Areas, by = "state") %>%
   mutate(pop_density = population/area)
-
 rm(USStates_Areas, USStateActions, ConfirmedCases)
 
 # find days between 1st case and 1st death
@@ -48,7 +46,7 @@ USStates <- USStates %>%
          cases_per_capita = confirmed_cases/population)
 
 # find most unique states in terms of mobility trends
-USStates <- find_euclidean_dist(data = USStates)
+USStates <- find_euclidean_dist(data = USStates, dates = 3)
 
 # find clusters based on social distancing
 # standardize mobility data
@@ -104,7 +102,13 @@ USStates_Long <- USStates %>%
 USStates_Wide <- USStates %>%
   pivot_wider(names_from = date, values_from = c(retail_recreation:residential, confirmed_cases, cases_per_capita, euclidean_dist_avg, cluster_k_means, cluster_hierarchical, social_dist_score)) %>%
   mutate(avg_response_time = (response_emergency + response_school + response_stay_home)/3,
-         avg_dist_score = (`social_dist_score_2020-03-29` + `social_dist_score_2020-04-05`)/2)
+         avg_dist_score = (`social_dist_score_2020-03-29` + `social_dist_score_2020-04-05` + `social_dist_score_2020-04-11`)/3)
+
+# find change in social distancing score across time
+USStates <- USStates %>%
+  left_join(USStates_Wide %>%
+              mutate(diff_score = `social_dist_score_2020-04-11` - `social_dist_score_2020-03-29`) %>%
+              select(state, diff_score), by = "state")
 
 # standardize mobility data
 US_standardized <- standardize_data(USStates)
