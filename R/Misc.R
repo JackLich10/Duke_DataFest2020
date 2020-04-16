@@ -1,6 +1,10 @@
 # source data cleaning
 source("R/Data_Cleaning_Manip.R")
 
+USStates_Wide %>%
+  ggplot() +
+  geom_point(aes(x = avg_response_time, y = (`social_dist_score_2020-03-29` + `social_dist_score_2020-04-05`)/2, color = `cluster_k_means_2020-03-29`))
+
 USStates %>%
   ggplot() +
   geom_boxplot(aes(x = as.factor(date), y = social_dist_score, fill = as.factor(cluster_k_means))) +
@@ -20,11 +24,6 @@ USStates %>%
   geom_point(aes(x = days_from_case_to_stay_home, y = social_dist_score, color = as.factor(cluster_k_means))) +
   geom_text_repel(aes(x = days_from_case_to_stay_home, y = social_dist_score, label = ifelse(is_outlier(days_from_case_to_stay_home) | is_outlier(social_dist_score), state, "")),
                 family = hrbrthemes::font_an) +
-  facet_wrap(.~ date)
-
-USStates %>%
-  ggplot() +
-  geom_col(aes(y = reorder(state, social_dist_score), x = social_dist_score, color = as.factor(cluster_k_means))) +
   facet_wrap(.~ date)
 
 pd <- USStates %>%
@@ -87,24 +86,17 @@ USStates %>%
        x = "Change in Cases/Capita from 3/29 to 4/5")
 
 USStates %>%
-  mutate(cluster_k_means = case_when(
-    cluster_k_means == 1 ~ "Cluster 1",
-    cluster_k_means == 2 ~ "Cluster 2",
-    cluster_k_means == 3 ~ "Cluster 3")) %>%
   ggplot() +
   geom_smooth(aes(x = cases_per_capita, y = social_dist_score),
               method = "lm", se = T) +
-  geom_point(aes(x = cases_per_capita, y = social_dist_score, color = as.factor(cluster_k_means))) +
+  geom_point(aes(x = cases_per_capita, y = social_dist_score, color = cluster_k_means)) +
   geom_text_repel(aes(x = cases_per_capita, y = social_dist_score, label = ifelse(is_outlier(cases_per_capita) | is_outlier(social_dist_score), state, "")),
                   family = hrbrthemes::font_an) +
-  facet_wrap(as.factor(date) ~ as.factor(cluster_k_means), scales = "free") +
+  facet_wrap(as.factor(date) ~ cluster_k_means, scales = "free") +
   theme_ipsum() +
   theme(legend.position = "bottom") +
   labs(title = "States with more cases are distancing more",
        y = "Social Distancing Score",
        x = "Cases/Capita",
-       color = "Cluster")
-
-
-
+       color = NULL)
 

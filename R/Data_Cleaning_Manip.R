@@ -23,7 +23,7 @@ USStateActions <- read_csv("data/Social Distancing - State Actions.csv") %>%
 # read in confirmed cases
 ConfirmedCases <- read_csv("data/Social Distancing - Sheet4.csv") %>%
   select(1:3) %>%
-  pivot_longer(cols = c(2:3), names_to = "date", values_to = "confirmed_cases_through_date", names_prefix = "cases_through") %>%
+  pivot_longer(cols = c(2:3), names_to = "date", values_to = "confirmed_cases", names_prefix = "cases_through") %>%
   mutate(date = mdy(date))
 
 # join dataframes and remove unnecessary data
@@ -35,8 +35,12 @@ rm(USStateActions, ConfirmedCases)
 # find days between 1st case and 1st death
 USStates <- USStates %>%
   mutate(days_from_case_to_death = as.numeric(date_of_1st_death - date_of_1st_case),
-         days_from_case_to_stay_home = as.numeric(date_of_stay_at_home_order - date_of_1st_case),
-         cases_per_capita = confirmed_cases_through_date/population)
+         response_stay_home = case_when(
+           !is.na(date_of_stay_at_home_order) ~ as.numeric(date_of_stay_at_home_order - date_of_1st_case),
+           TRUE ~ as.numeric(Sys.Date() - date_of_1st_case)),
+         response_school = as.numeric(state_mandated_school_closures - date_of_1st_case),
+         response_emergency = as.numeric(emergency_declaration - date_of_1st_case),
+         cases_per_capita = confirmed_cases/population)
 
 # find most unique states in terms of mobility trends
 USStates <- find_euclidean_dist(data = USStates)
@@ -91,8 +95,14 @@ USStates_Long <- USStates %>%
            TRUE ~ as.character(NA)),
          mean = mean(value))
 
+# pivot from long to wide format
+USStates_Wide <- USStates %>%
+  pivot_wider(names_from = date, values_from = c(retail_recreation:residential, confirmed_cases, cases_per_capita, euclidean_dist_avg, cluster_k_means, cluster_hierarchical, social_dist_score)) %>%
+  mutate(avg_response_time = (response_emergency + response_school + response_stay_home)/3)
+
 # standardize mobility data
 US_standardized <- standardize_data(USStates)
 
-# write .csv file of data
+# write .csv file of datasets
 write_csv(USStates, path = "data/USStates.csv")
+write_csv(USStates_Wide, path = "data/USStates_Wide.csv")

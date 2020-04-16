@@ -6,7 +6,7 @@ Data Dictionary:
 
 Number of Observations: 51
 
-Number of Variables: 28
+Number of Variables: 42
 
 Description of Variables:
 
