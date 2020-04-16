@@ -206,3 +206,12 @@ lm_step_everythang <- step(lm_everythang, direction = "backward")
 
 summary(lm_step_everythang)
 
+# Cleaning Case Data
+
+state_confirmed <- read_csv("data/covid_confirmed_usafacts.csv")
+
+state_confirmed %>% 
+  group_by(State) %>% 
+  summarise("4/11/20" = sum(`4/11/2020`)) %>% 
+  view()
+
