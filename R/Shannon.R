@@ -9,6 +9,9 @@ library(usmap)
 # source data and helper functions (this will populate environment with data)
 source("R/Data_Cleaning_Manip.R")
 
+USStates <- read_csv("data/USStates.csv")
+USStates_wide <- read_csv("data/USStates_Wide.csv")
+
 # Linear Model Exploration ------------------------------------------------
 lm_total <- lm(confirmed_cases ~ retail_recreation + date +
                     grocery_pharmacy + parks + transit_stations + workplaces + 
@@ -185,7 +188,7 @@ cluster_3_means <- USStates %>%
 #Cluster 1 has the most cases, most cases/capita, best social distancing score,
 # and worst response times
 
-plot_usmap(data = USStates, values = "social_dist_score") +
+plot_usmap(data = USStates, values = "social_dist_score", labels = FALSE) +
   scale_fill_steps2(
     low = "red",
     mid = "white",
@@ -215,3 +218,29 @@ state_confirmed %>%
   summarise("4/11/20" = sum(`4/11/2020`)) %>% 
   view()
 
+## Exploring political relationships
+
+USStates_wide %>%
+  mutate(score_bin = if_else(avg_dist_score >= 0, "good", "bad")) %>% 
+  group_by(governor, score_bin) %>% 
+  summarise(n = n()) %>% 
+  mutate(prop = n/sum(n))
+
+USStates_wide <- USStates_wide %>% 
+  mutate(score_bin = if_else(avg_dist_score >= 0, "good", "bad"))
+
+USStates_wide %>% 
+  ggplot(aes(fill = governor, x = score_bin, y = avg_response_time)) + 
+  geom_bar(position="fill", stat="identity")
+
+# Reactive states
+USStates_wide %>% 
+  group_by(avg_dist_score) %>% 
+  arrange(desc(avg_dist_score)) %>% 
+  select(state, avg_dist_score) %>% 
+  view()
+
+USStates_wide %>% 
+ggplot(aes(x = state, y = state_mandated_school_closures))+
+  geom_point()
+         
