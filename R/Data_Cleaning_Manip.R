@@ -6,7 +6,7 @@ library(lubridate)
 library(janitor)
 
 # set seed for repeatability
-set.seed(123)
+set.seed(222)
 
 # load helper functions
 source("R/Helpers.R")
@@ -22,8 +22,12 @@ USStateActions <- read_csv("data/Social Distancing - State Actions.csv") %>%
 
 # read in confirmed cases
 ConfirmedCases <- read_csv("data/Social Distancing - State Cases.csv") %>%
-  pivot_longer(cols = c(2:4), names_to = "date", values_to = "confirmed_cases", names_prefix = "cases_through") %>%
-  mutate(date = mdy(date))
+  pivot_longer(cols = c(2:4), names_to = "date", values_to = c("confirmed_cases"), names_prefix = "cases_through") %>%
+  pivot_longer(cols = c(2:4), names_to = "date2", values_to = c("rate"), names_prefix = "rate") %>%
+  mutate(date = mdy(date),
+         date2 = mdy(date2)) %>%
+  filter(date == date2) %>%
+  select(-date2)
 
 # join dataframes and remove unnecessary data
 USStates <- left_join(USStates, USStateActions, by = "state") %>%
@@ -100,15 +104,17 @@ USStates_Long <- USStates %>%
 
 # pivot from long to wide format
 USStates_Wide <- USStates %>%
-  pivot_wider(names_from = date, values_from = c(retail_recreation:residential, confirmed_cases, cases_per_capita, euclidean_dist_avg, cluster_k_means, cluster_hierarchical, social_dist_score)) %>%
+  pivot_wider(names_from = date, values_from = c(retail_recreation:residential, confirmed_cases, cases_per_capita, rate, euclidean_dist_avg, cluster_k_means, cluster_hierarchical, social_dist_score)) %>%
   mutate(avg_response_time = (response_emergency + response_school + response_stay_home)/3,
          avg_dist_score = (`social_dist_score_2020-03-29` + `social_dist_score_2020-04-05` + `social_dist_score_2020-04-11`)/3)
 
 # find change in social distancing score across time
 USStates <- USStates %>%
   left_join(USStates_Wide %>%
-              mutate(diff_score = `social_dist_score_2020-04-11` - `social_dist_score_2020-03-29`) %>%
-              select(state, diff_score), by = "state")
+              mutate(diff_score = `social_dist_score_2020-04-11` - `social_dist_score_2020-03-29`,
+                     diff_cases_capita = `cases_per_capita_2020-04-11` - `cases_per_capita_2020-03-29`,
+                     diff_rate = `rate_2020-04-11` - `rate_2020-03-29`) %>%
+              select(state, diff_score, diff_cases_capita, diff_rate), by = "state")
 
 # standardize mobility data
 US_standardized <- standardize_data(USStates)

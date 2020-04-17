@@ -38,12 +38,12 @@ USStates %>%
   guides(color = F, alpha = F) +
   theme_ipsum() +
   labs(title = "Changes in Social Distancing Behaviors",
-       subtitle = "among US states from 3/29 to 4/5",
+       subtitle = "among US states from 3/29 through 4/11",
        x = "Date",
        y = "Social Distancing Score",
        caption = "Data from Google Mobility Reports")
               
-# top and bottom 10 states in social distancing
+# top and bottom 5 states in social distancing
 USStates_Avg <- USStates %>%
   group_by(state) %>%
   mutate(avg_dist_score = mean(social_dist_score),
@@ -74,7 +74,7 @@ USStates_Avg %>%
   geom_segment(aes(x = reorder(type, mean), xend = type, y = value/100, yend = mean/100)) +
   geom_point(aes(x = reorder(type, mean), y = mean/100), color = "grey", size = 2) +
   geom_point(aes(x = reorder(type, mean), y = value/100, color = type), size = 4) +
-  geom_text(aes(x = 1.5, y = ifelse(state == "District of Columbia", 0.05, 0), label = ifelse(state == "District of Columbia", paste("Distancing Score: ", round(avg_dist_score, 2), sep = "\n"), round(avg_dist_score, 2))), 
+  geom_text(aes(x = 1.5, y = ifelse(state == "Hawaii", 0.05, 0), label = ifelse(state == "Hawaii", paste("Distancing Score: ", round(avg_dist_score, 2), sep = "\n"), round(avg_dist_score, 2))), 
             family = hrbrthemes::font_an, size = 3.5, fontface = "bold") +
   facet_wrap(.~ state) +
   scale_y_continuous(labels = scales::percent) +
@@ -82,7 +82,8 @@ USStates_Avg %>%
   theme_ipsum() +
   theme(axis.text.x = element_blank(),
         panel.spacing = unit(0.5, "lines"),
-        legend.position = c(0.9, 0.175)) +
+        legend.position = c(0.9, 0.175),
+        legend.text = element_text(size = 12)) +
   labs(title = "Leading 5 States in Social Distancing",
        subtitle = "(grey points correspond to average among all US states)",
        x = NULL,
@@ -99,7 +100,7 @@ USStates_Avg %>%
   geom_segment(aes(x = reorder(type, mean), xend = type, y = value/100, yend = mean/100)) +
   geom_point(aes(x = reorder(type, mean), y = mean/100), color = "grey", size = 2) +
   geom_point(aes(x = reorder(type, mean), y = value/100, color = type), size = 4) +
-  geom_text(aes(x = 1.5, y = ifelse(state == "South Dakota", 0.95, 0.9), label = ifelse(state == "South Dakota", paste("Distancing Score: ", round(avg_dist_score, 2), sep = "\n"), round(avg_dist_score, 2))), 
+  geom_text(aes(x = 1.5, y = ifelse(state == "Nebraska", 0.65, 0.6), label = ifelse(state == "Nebraska", paste("Distancing Score: ", round(avg_dist_score, 2), sep = "\n"), round(avg_dist_score, 2))), 
             family = hrbrthemes::font_an, size = 3.5, fontface = "bold") +
   facet_wrap(.~ state) +
   scale_y_continuous(labels = scales::percent) +
@@ -107,7 +108,8 @@ USStates_Avg %>%
   theme_ipsum() +
   theme(axis.text.x = element_blank(),
         panel.spacing = unit(0.5, "lines"),
-        legend.position = c(0.9, 0.175)) +
+        legend.position = c(0.9, 0.175),
+        legend.text = element_text(size = 12)) +
   labs(title = "Bottom 5 States in Social Distancing",
        subtitle = "(grey points correspond to average among all US states)",
        x = NULL,
