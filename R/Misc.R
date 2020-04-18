@@ -1,6 +1,24 @@
 # source data cleaning
 source("R/Data_Cleaning_Manip.R")
 
+a<- USStates_Wide %>%
+  count(cluster_pop, state)
+
+USStates %>%
+  mutate(cluster_pop = case_when(
+    cluster_pop == 1 ~ "Cluster 1: GA, HI, IN, KY, LA, MI, NH, NC, SC, TX, VA, TN, WA",
+    cluster_pop == 2 ~ "Cluster 2: CA, DE, FL, IL, MD, PA, OH",
+    cluster_pop == 3 ~ "Cluster 3: AL, AK, AR, CO, ID, IA, KS, ME, MN, MS, MO, MT, NE, NV, NM, ND, OK, OR, SD, UT, VT, WV, WI, WY",
+    cluster_pop == 4 ~ "Cluster 4: NY, NJ, RI, MA, CT",
+    TRUE ~ as.character(cluster_pop))) %>%
+  ggplot() +
+  geom_boxplot(aes(x = as.factor(date), y = social_dist_score, color = governor)) +
+  facet_wrap(.~ cluster_pop, scales = "free_x") +
+  theme_ipsum() +
+  labs(x = "Date",
+       y = "Social Distancing Score",
+       color = "Governor")
+
 USStates %>%
   ggplot() +
   geom_boxplot(aes(x = as.factor(date), y = social_dist_score, fill = cluster_k_means)) +
@@ -78,26 +96,26 @@ USStates %>%
 
 # Changes in cases/capita affecting social distancing
 USStates_Wide %>%
-  mutate(diff_cases_capita = `cases_per_capita_2020-04-11` - `cases_per_capita_2020-03-29`) %>%
+  mutate(diff_cases_capita = (`cases_per_capita_2020-04-11` - `cases_per_capita_2020-03-29`)/`cases_per_capita_2020-03-29`) %>%
   ggplot() +
-  geom_smooth(aes(x = diff_cases_capita, y = avg_dist_score),
+  geom_smooth(aes(x = diff_cases_capita, y = avg_dist_score, color = governor),
               method = "lm", se = T) +
-  geom_point(aes(x = diff_cases_capita, y = avg_dist_score)) +
+  geom_point(aes(x = diff_cases_capita, y = avg_dist_score, color = governor)) +
   geom_text_repel(aes(x = diff_cases_capita, y = avg_dist_score, label = ifelse(is_outlier(diff_cases_capita) | is_outlier(avg_dist_score), state, "")),
                   family = hrbrthemes::font_an) +
   scale_y_continuous(limits = c(-11, 15)) +
   theme_ipsum() +
   theme(legend.position = c(0.9, 0.15)) +
-  labs(title = "States with more cases are distancing more",
+  labs(title = "States with Democratic governors are distancing more",
        y = "Average Social Distancing Score",
-       x = "Change in Cases/Capita from 3/29 to 4/11",
+       x = "Change in Rate of Spread from 3/29 to 4/11",
        color = NULL)
 
 USStates %>%
   ggplot() +
-  geom_smooth(aes(x = cases_per_capita, y = social_dist_score),
+  geom_smooth(aes(x = cases_per_capita, y = social_dist_score, color = governor),
               method = "lm", se = T) +
-  geom_point(aes(x = cases_per_capita, y = social_dist_score, color = cluster_k_means)) +
+  geom_point(aes(x = cases_per_capita, y = social_dist_score, color = governor)) +
   geom_text_repel(aes(x = cases_per_capita, y = social_dist_score, label = ifelse(is_outlier(cases_per_capita) | is_outlier(social_dist_score), state, "")),
                   family = hrbrthemes::font_an) +
   facet_wrap(.~ as.factor(date), scales = "free_x") +

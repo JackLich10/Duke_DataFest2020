@@ -38,7 +38,8 @@ USStates <- left_join(USStates, USStateActions, by = "state") %>%
 USStates_Areas <- read_csv("data/Social Distancing - Area.csv")
 
 USStates <- left_join(USStates, USStates_Areas, by = "state") %>%
-  mutate(pop_density = population/area)
+  mutate(pop_density = population/area) %>%
+  filter(state != "District of Columbia")
 rm(USStates_Areas, USStateActions, ConfirmedCases)
 
 # find days between 1st case and 1st death
@@ -52,32 +53,37 @@ USStates <- USStates %>%
 # find most unique states in terms of mobility trends
 USStates <- find_euclidean_dist(data = USStates, dates = 3)
 
-# find clusters based on social distancing
-# standardize mobility data
-US_standardized <- standardize_data(USStates)
+USStates <- USStates %>%
+  left_join(USStates %>%
+              filter(date == "2020-03-29") %>%
+              select(state, confirmed_cases) %>%
+              rename(cases_3_29 = confirmed_cases),
+            by = "state")
 
-# calculating Euclidean distance for each state for both dates
+# find clusters based on population density and initial cases (on 3/29)
+# standardize mobility data
+US_standardized <- standardize_data(USStates, mobility = F)
+
 distance <- US_standardized %>%
-  dplyr::select(retail_recreation:residential) %>%
+  dplyr::select(pop_density, cases_3_29) %>%
   dist()
 
-# cluster dendrogram with complete linkage
-clusters <- cutree(hclust(distance), 3)
+k_means <- kmeans(distance, 4)
 
-# k-means clustering
-k_means <- kmeans(distance, 3)
-
-# add cluster number to each observation
 USStates <- USStates %>%
-  dplyr::mutate(cluster_k_means = k_means$cluster,
-                cluster_hierarchical = clusters)
+  dplyr::mutate(cluster_pop = k_means$cluster)
 
-# convert cluster number to factor with nice labels
-USStates <- USStates %>%
-  mutate(cluster_k_means = case_when(
-    cluster_k_means == 1 ~ "Cluster 1",
-    cluster_k_means == 2 ~ "Cluster 2",
-    cluster_k_means == 3 ~ "Cluster 3"))
+# find clusters within population density and initial cases clusters of social mobility
+USStates <- find_clusters_within(USStates)
+
+# # convert cluster number to factor with nice labels
+# USStates <- USStates %>%
+#   mutate(cluster_k_means = case_when(
+#     cluster_k_means == 1 ~ "Cluster 1",
+#     cluster_k_means == 2 ~ "Cluster 2",
+#     cluster_k_means == 3 ~ "Cluster 3"))
+
+US_standardized <- standardize_data(USStates, mobility = T)
 
 # calculate social distancing scores and join to dataset
 scores <- US_standardized %>%
@@ -87,7 +93,7 @@ scores <- US_standardized %>%
 USStates <- left_join(USStates, scores, by = c("state", "date"))
 
 # remove unneccessary data
-rm(k_means, clusters, distance, scores)
+rm(k_means, distance, scores)
 
 # pivot from wide to long format
 USStates_Long <- USStates %>%
@@ -104,7 +110,7 @@ USStates_Long <- USStates %>%
 
 # pivot from long to wide format
 USStates_Wide <- USStates %>%
-  pivot_wider(names_from = date, values_from = c(retail_recreation:residential, confirmed_cases, cases_per_capita, rate, euclidean_dist_avg, cluster_k_means, cluster_hierarchical, social_dist_score)) %>%
+  pivot_wider(names_from = date, values_from = c(retail_recreation:residential, confirmed_cases, cases_per_capita, rate, euclidean_dist_avg, cluster_k_means, social_dist_score)) %>%
   mutate(avg_response_time = (response_emergency + response_school + response_stay_home)/3,
          avg_dist_score = (`social_dist_score_2020-03-29` + `social_dist_score_2020-04-05` + `social_dist_score_2020-04-11`)/3)
 
@@ -115,6 +121,21 @@ USStates <- USStates %>%
                      diff_cases_capita = `cases_per_capita_2020-04-11` - `cases_per_capita_2020-03-29`,
                      diff_rate = `rate_2020-04-11` - `rate_2020-03-29`) %>%
               select(state, diff_score, diff_cases_capita, diff_rate), by = "state")
+
+# rearrange clusters and make clusters factors
+USStates <- USStates %>%
+  mutate(cluster_k_means = case_when(
+    cluster_pop == 1 & cluster_k_means == 1 ~ 2,
+    cluster_pop == 1 & cluster_k_means == 2 ~ 3,
+    cluster_pop == 1 & cluster_k_means == 3 ~ 1,
+    cluster_pop == 2 & cluster_k_means == 1 ~ 3,
+    cluster_pop == 2 & cluster_k_means == 2 ~ 1,
+    cluster_pop == 2 & cluster_k_means == 3 ~ 2,
+    cluster_pop == 4 & cluster_k_means == 1 ~ 2,
+    cluster_pop == 4 & cluster_k_means == 2 ~ 1,
+    TRUE ~ as.numeric(cluster_k_means)),
+    cluster_pop = factor(cluster_pop),
+    cluster_k_means = factor(cluster_k_means))
 
 # standardize mobility data
 US_standardized <- standardize_data(USStates)

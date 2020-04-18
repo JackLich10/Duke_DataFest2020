@@ -1,13 +1,19 @@
 library(tidyverse)
 
-# function to standardize mobility data
-standardize_data <- function(data) {
+# function to standardize mobility data or population data
+standardize_data <- function(data, mobility = TRUE) {
   data_copy <- data
   
+  if (mobility == TRUE) {
+    bounds <- 3:8
+  } else {
+    bounds <- c(24, 31)
+  }
+  
   # normalization of mobility trends (subtracting mean, dividing by standard deviation) (must be quantitative data)
-  means <- apply(data[, 3:8], 2, mean)
-  stdevs <- apply(data[, 3:8], 2, sd)
-  data_copy[, 3:8] <- as.data.frame(scale(data[, 3:8], means, stdevs))
+  means <- apply(data[, bounds], 2, mean)
+  stdevs <- apply(data[, bounds], 2, sd)
+  data_copy[, bounds] <- as.data.frame(scale(data[, bounds], means, stdevs))
   return(data_copy)
 }
 
@@ -42,6 +48,36 @@ find_euclidean_dist <- function(data, dates) {
   # join euclidean distance by state
   data <- left_join(data, euclid_dist, by = c("state", "date"))
   # data <- left_join(data, euclid_dist_change, by = c("state"))
+  return(data)
+}
+
+# function to find clusters of social distancing within population density clusters
+find_clusters_within <- function(data, clusters = 4) {
+  # Standardize mobility data
+  US_standardized <- standardize_data(data, mobility = T)
+  
+  for (i in 1:clusters) {
+    # Find cluster i
+    cluster_i <- US_standardized[which(US_standardized$cluster_pop == i),]
+    # Calculate euclidean distance
+    distance <- dist(cluster_i[, 3:8])
+    # Find 3 clusters
+    k_means <- kmeans(distance, 3)
+    
+    cluster_i <- cluster_i %>%
+      mutate(cluster_k_means = k_means$cluster)
+    
+    if(!exists("total_df")) {
+      total_df <- cluster_i
+    } else {
+      total_df <- rbind(total_df, cluster_i)
+    }
+  }
+  data <- data %>%
+    left_join(total_df %>%
+                select(state, date, cluster_pop, cluster_k_means),
+              by = c("state", "date", "cluster_pop"))
+  
   return(data)
 }
 
