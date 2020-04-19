@@ -4,7 +4,7 @@
 
 Data Dictionary:
 
-Number of Observations: 51
+Number of Observations: 50
 
 Number of Variables: 42
 
@@ -46,7 +46,17 @@ Note that for the following variables, each mobility trend is compared to a base
 
 `population`: Population
 
-`confirmed_cases_through_date`: Confirmed cases through date
+`latitude`: Latitude
+
+`longitude`: Longitude
+
+`area`: Area
+
+`pop_density`: Population/Area
+
+`confirmed_cases`: Confirmed cases through date
+
+`rate`: Rate of spread calculated by (cases today - cases 2 days prior)/cases 2 days prior
 
 `days_from_case_to_death`: Number of days from 1st case to 1st death
 
@@ -54,13 +64,11 @@ Note that for the following variables, each mobility trend is compared to a base
 
 `cases_per_capita`: Confirmed cases divided by population size
 
-`euclidean_dist_avg`: Euclidean distance of social mobility from average
+`euclidean_dist_avg`: Euclidean distance of social mobility from average US state
 
-`euclidean_dist_change`: Change in euclidean distance of social mobility from week to week
+`cluster_pop`: Assigned k-means cluster based on population density and initial cases (from 3/29)
 
-`cluster_k_means`: Assigned k-means cluster based on social mobility
-
-`cluster_hierarchical`: Assigned hierarchical cluster based on social mobility
+`cluster_k_means`: Assigned k-means cluster based on social mobility within each `cluster_pop`
 
 `social_dist_score`: Calculated by the following (NOTE: each value is normalized by subtracting the mean and dividing by standard deviation):
 
