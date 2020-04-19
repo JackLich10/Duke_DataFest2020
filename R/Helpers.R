@@ -7,7 +7,7 @@ standardize_data <- function(data, mobility = TRUE) {
   if (mobility == TRUE) {
     bounds <- 3:8
   } else {
-    bounds <- c(24, 31)
+    bounds <- c(26, 33)
   }
   
   # normalization of mobility trends (subtracting mean, dividing by standard deviation) (must be quantitative data)

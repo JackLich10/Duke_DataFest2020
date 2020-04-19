@@ -68,11 +68,11 @@ state_data_set_long <- USStates %>%
 # Attempt to plot
 state_data_set_long %>%
   ggplot() +
-  geom_boxplot(aes(x = type_response_time, y = response_time)) +
-  geom_text_repel(aes(x = type_response_time, y = response_time,
+  geom_boxplot(aes(x = type_response_time, y = response_time, fill = governor)) +
+  geom_text_repel(aes(x = type_response_time, y = response_time, fill = governor,
                       label = ifelse(!is.na(outlier), paste0(state, ": ", response_time, " days"), ""),
                       color = high_low), size = 3, fontface = "bold", family = hrbrthemes::font_an) +
-  scale_color_manual(values = c("red", "blue")) +
+  scale_fill_manual(values = c("#1a4ba9", "#a90010")) +
   scale_x_discrete(labels = c("State of Emergency", "School Cancellations", "Stay at Home Order")) +
   guides(color = F) +
   theme_ipsum() +

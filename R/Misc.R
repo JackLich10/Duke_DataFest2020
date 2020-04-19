@@ -1,15 +1,34 @@
 # source data cleaning
 source("R/Data_Cleaning_Manip.R")
 
-a<- USStates_Wide %>%
-  count(cluster_pop, state)
+# Democratic governed states distance more
+library(ggridges)
+USStates %>%
+  mutate(cluster_pop = case_when(
+    cluster_pop == 1 ~ "Cluster 1: GA, HI, IN, KY, LA, MI, NH, NC, SC, TX, TN, VA, WA",
+    cluster_pop == 2 ~ "Cluster 2: CA, DE, FL, IL, MD, OH, PA",
+    cluster_pop == 3 ~ "Cluster 3: AL, AK, AR, CO, ID, IA, KS, ME, MN, MS, MO, MT, NE, NV, NM, ND, OK, OR, SD, UT, VT, WV, WI, WY",
+    cluster_pop == 4 ~ "Cluster 4: CT, MA, NJ, NY, RI",
+    TRUE ~ as.character(cluster_pop))) %>%
+  ggplot() +
+  stat_density_ridges(aes(x = social_dist_score, y = governor, fill = governor), 
+                      alpha = 0.75, quantile_lines = T, quantiles = 2, scale = 3, color = "white") +
+  facet_wrap(.~ cluster_pop) +
+  scale_fill_manual(values = c("#1a4ba9", "#a90010")) +
+  guides(fill = F) +
+  theme_ipsum() +
+  labs(title = "Democratic Governed States are Distancing More",
+       subtitle = "(white line shows median social distance score)",
+       x = "Social Distance Score",
+       y = "Governor Affiliation",
+       caption = "Data courtesy of Google")
 
 USStates %>%
   mutate(cluster_pop = case_when(
-    cluster_pop == 1 ~ "Cluster 1: GA, HI, IN, KY, LA, MI, NH, NC, SC, TX, VA, TN, WA",
-    cluster_pop == 2 ~ "Cluster 2: CA, DE, FL, IL, MD, PA, OH",
+    cluster_pop == 1 ~ "Cluster 1: GA, HI, IN, KY, LA, MI, NH, NC, SC, TX, TN, VA, WA",
+    cluster_pop == 2 ~ "Cluster 2: CA, DE, FL, IL, MD, OH, PA",
     cluster_pop == 3 ~ "Cluster 3: AL, AK, AR, CO, ID, IA, KS, ME, MN, MS, MO, MT, NE, NV, NM, ND, OK, OR, SD, UT, VT, WV, WI, WY",
-    cluster_pop == 4 ~ "Cluster 4: NY, NJ, RI, MA, CT",
+    cluster_pop == 4 ~ "Cluster 4: CT, MA, NJ, NY, RI",
     TRUE ~ as.character(cluster_pop))) %>%
   ggplot() +
   geom_boxplot(aes(x = as.factor(date), y = social_dist_score, color = governor)) +
@@ -20,9 +39,26 @@ USStates %>%
        color = "Governor")
 
 USStates %>%
+  mutate(cluster_pop = case_when(
+    cluster_pop == 1 ~ "Cluster 1: GA, HI, IN, KY, LA, MI, NH, NC, SC, TX, TN, VA, WA",
+    cluster_pop == 2 ~ "Cluster 2: CA, DE, FL, IL, MD, OH, PA",
+    cluster_pop == 3 ~ "Cluster 3: AL, AK, AR, CO, ID, IA, KS, ME, MN, MS, MO, MT, NE, NV, NM, ND, OK, OR, SD, UT, VT, WV, WI, WY",
+    cluster_pop == 4 ~ "Cluster 4: CT, MA, NJ, NY, RI",
+    TRUE ~ as.character(cluster_pop))) %>%
   ggplot() +
-  geom_boxplot(aes(x = as.factor(date), y = social_dist_score, fill = cluster_k_means)) +
-  facet_wrap(.~ cluster_k_means) +
+  geom_smooth(aes(x = date, y = social_dist_score, color = governor),
+              method = "lm", se = F) +
+  geom_point(aes(x = date, y = social_dist_score, color = governor)) +
+  facet_wrap(.~ cluster_pop, scales = "free_x") +
+  theme_ipsum() +
+  labs(x = "Date",
+       y = "Social Distancing Score",
+       color = "Governor")
+
+USStates %>%
+  ggplot() +
+  geom_boxplot(aes(x = as.factor(date), y = social_dist_score, fill = cluster_pop)) +
+  facet_wrap(.~cluster_pop) +
   guides(fill = F) +
   theme_ipsum() +
   labs(title = "Social Distancing by Cluster",
@@ -30,43 +66,18 @@ USStates %>%
        y = "Social Distancing Score")
 
 USStates %>%
-  ggplot() +
-  geom_point(aes(x = response_stay_home, y = social_dist_score, color = cluster_k_means)) +
-  geom_text_repel(aes(x = response_stay_home, y = social_dist_score, label = ifelse(is_outlier(response_stay_home) | is_outlier(social_dist_score), state, "")),
-                family = hrbrthemes::font_an) +
-  facet_wrap(.~ date)
-
-pd <- USStates %>%
-  group_by(date) %>%
-  ungroup() %>%
-  arrange(date, social_dist_score) %>%
-  mutate(order = row_number())
-
-pd %>%
-  ggplot() +
-  geom_col(aes(y = order, x = social_dist_score, fill = cluster_k_means)) +
-  facet_wrap(.~ date, scales = "free") +
-  scale_y_continuous(breaks = pd$order, labels = pd$state, expand = c(0, 0)) +
-  guides(fill = F) +
-  theme_ipsum() +
-  theme(panel.spacing = unit(0.25, "lines")) +
-  labs(title = "US Social Distancing",
-       x = "Social Distancing Score",
-       y = NULL,
-       caption = "Data courtesy of Google")
-
-USStates %>%
-  select(state, date, cases_per_capita, social_dist_score, cluster_k_means) %>%
+  select(state, date, cases_per_capita, social_dist_score, cluster_pop) %>%
   group_by(state) %>%
   mutate(change_cases_per_capita = cases_per_capita - lag(cases_per_capita, order_by = date, default = 0),
          change_social_dist_score = social_dist_score - lag(social_dist_score, order_by = date, default = 0)) %>%
   filter(date == "2020-04-05") %>%
   ggplot() +
   geom_smooth(aes(x = change_cases_per_capita, y = change_social_dist_score),
-              method = "lm", se = T) +
-  geom_point(aes(x = change_cases_per_capita, y = change_social_dist_score, color = as.factor(cluster_k_means))) +
+              method = "lm", se = F) +
+  geom_point(aes(x = change_cases_per_capita, y = change_social_dist_score, color = as.factor(cluster_pop))) +
   geom_text_repel(aes(x = change_cases_per_capita, y = change_social_dist_score, label = ifelse(is_outlier(change_cases_per_capita) | is_outlier(change_social_dist_score), state, "")),
                   family = hrbrthemes::font_an) +
+  facet_wrap(.~ cluster_pop, scales = "free") +
   theme_ipsum() +
   theme(legend.position = "bottom") +
   labs(title = "How do changes in cases lead to changes in social distancing",
@@ -76,7 +87,7 @@ USStates %>%
        color = NULL)
 
 USStates %>%
-  select(state, date, cases_per_capita, social_dist_score, cluster_k_means) %>%
+  select(state, date, cases_per_capita, social_dist_score, cluster_pop) %>%
   group_by(state) %>%
   mutate(change_cases_per_capita = cases_per_capita - lag(cases_per_capita, n = 2, order_by = date, default = 0),
          change_social_dist_score = social_dist_score - lag(social_dist_score, n = 2, order_by = date, default = 0)) %>%
@@ -84,10 +95,11 @@ USStates %>%
   ggplot() +
   geom_smooth(aes(x = change_cases_per_capita, y = social_dist_score),
               method = "lm", se = T) +
-  geom_point(aes(x = change_cases_per_capita, y = social_dist_score, color = as.factor(cluster_k_means))) +
+  geom_point(aes(x = change_cases_per_capita, y = social_dist_score, color = as.factor(cluster_pop))) +
   geom_text_repel(aes(x = change_cases_per_capita, y = social_dist_score, label = ifelse(is_outlier(change_cases_per_capita) | is_outlier(social_dist_score), state, "")),
                   family = hrbrthemes::font_an) +
-  facet_wrap(.~ cluster_k_means, scales = "free_x") +
+  facet_wrap(.~ cluster_pop, scales = "free_x") +
+  scale_color_manual(values = c("black", "#a90010", "grey", "#1a4ba9")) +
   guides(color = F) +
   theme_ipsum() +
   labs(title = "How do changes in cases lead to social distancing",
@@ -99,60 +111,75 @@ USStates_Wide %>%
   mutate(diff_cases_capita = (`cases_per_capita_2020-04-11` - `cases_per_capita_2020-03-29`)/`cases_per_capita_2020-03-29`) %>%
   ggplot() +
   geom_smooth(aes(x = diff_cases_capita, y = avg_dist_score, color = governor),
-              method = "lm", se = T) +
+              method = "lm", se = F) +
   geom_point(aes(x = diff_cases_capita, y = avg_dist_score, color = governor)) +
   geom_text_repel(aes(x = diff_cases_capita, y = avg_dist_score, label = ifelse(is_outlier(diff_cases_capita) | is_outlier(avg_dist_score), state, "")),
                   family = hrbrthemes::font_an) +
-  scale_y_continuous(limits = c(-11, 15)) +
+  facet_wrap(.~ cluster_pop) +
+  scale_x_continuous(labels = scales::percent) +
   theme_ipsum() +
   theme(legend.position = c(0.9, 0.15)) +
   labs(title = "States with Democratic governors are distancing more",
        y = "Average Social Distancing Score",
-       x = "Change in Rate of Spread from 3/29 to 4/11",
+       x = "%Change in Cases/Capita from 3/29 to 4/11",
        color = NULL)
 
 USStates %>%
+  mutate(cluster_pop = case_when(
+    cluster_pop == 1 ~ "Cluster 1: GA, HI, IN, KY, LA, MI, NH, NC, SC, TX, TN, VA, WA",
+    cluster_pop == 2 ~ "Cluster 2: CA, DE, FL, IL, MD, OH, PA",
+    cluster_pop == 3 ~ "Cluster 3: AL, AK, AR, CO, ID, IA, KS, ME, MN, MS, MO, MT, NE, NV, NM, ND, OK, OR, SD, UT, VT, WV, WI, WY",
+    cluster_pop == 4 ~ "Cluster 4: CT, MA, NJ, NY, RI",
+    TRUE ~ as.character(cluster_pop))) %>%
   ggplot() +
-  geom_smooth(aes(x = cases_per_capita, y = social_dist_score, color = governor),
-              method = "lm", se = T) +
-  geom_point(aes(x = cases_per_capita, y = social_dist_score, color = governor)) +
+  geom_smooth(aes(x = cases_per_capita, y = social_dist_score, color = as.factor(date)),
+              method = "lm", se = F) +
+  geom_point(aes(x = cases_per_capita, y = social_dist_score, color = as.factor(date))) +
   geom_text_repel(aes(x = cases_per_capita, y = social_dist_score, label = ifelse(is_outlier(cases_per_capita) | is_outlier(social_dist_score), state, "")),
                   family = hrbrthemes::font_an) +
-  facet_wrap(.~ as.factor(date), scales = "free_x") +
-  scale_y_continuous(limits = c(-11, 15)) +
+  facet_wrap(~ cluster_pop, scales = "free_x") +
+  scale_color_manual(values = c("#a90010", "black", "#1a4ba9")) +
   theme_ipsum() +
   theme(legend.position = c(0.9, 0.15)) +
-  labs(title = "States with more cases are distancing more",
+  labs(title = "States with more cases distance more, but everybody is distancing less",
        y = "Social Distancing Score",
        x = "Cases/Capita",
-       color = NULL)
+       color = "Date")
 
 # Changes in rate of spread affecting social distancing
 USStates_Wide %>%
-  mutate(diff_rate = `rate_2020-04-11` - `rate_2020-03-29`) %>%
+  mutate(cluster_pop = case_when(
+    cluster_pop == 1 ~ "Cluster 1: GA, HI, IN, KY, LA, MI, NH, NC, SC, TX, TN, VA, WA",
+    cluster_pop == 2 ~ "Cluster 2: CA, DE, FL, IL, MD, OH, PA",
+    cluster_pop == 3 ~ "Cluster 3: AL, AK, AR, CO, ID, IA, KS, ME, MN, MS, MO, MT, NE, NV, NM, ND, OK, OR, SD, UT, VT, WV, WI, WY",
+    cluster_pop == 4 ~ "Cluster 4: CT, MA, NJ, NY, RI",
+    TRUE ~ as.character(cluster_pop))) %>%
+  mutate(diff_rate = (`rate_2020-04-11` - `rate_2020-03-29`)/`rate_2020-03-29`,
+         change_dist_score = `social_dist_score_2020-04-11` - `social_dist_score_2020-03-29`) %>%
   ggplot() +
-  geom_smooth(aes(x = diff_rate, y = avg_dist_score),
-              method = "lm", se = T) +
-  geom_point(aes(x = diff_rate, y = avg_dist_score)) +
-  geom_text_repel(aes(x = diff_rate, y = avg_dist_score, label = ifelse(is_outlier(diff_rate) | is_outlier(avg_dist_score), state, "")),
+  geom_smooth(aes(x = `social_dist_score_2020-03-29`, y = diff_rate, color = cluster_pop),
+              method = "lm", se = F) +
+  geom_point(aes(x = `social_dist_score_2020-03-29`, y = diff_rate, color = cluster_pop)) +
+  geom_text_repel(aes(x = `social_dist_score_2020-03-29`, y = diff_rate, label = ifelse(state %in% c("New York", "Rhode Island"), state, "")),
                   family = hrbrthemes::font_an) +
-  scale_y_continuous(limits = c(-11, 15)) +
+  facet_wrap(.~ cluster_pop, scales = "free") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_color_manual(values = c("black", "#a90010", "grey", "#1a4ba9")) +
   theme_ipsum() +
-  theme(legend.position = c(0.9, 0.15)) +
-  labs(title = "States with more cases are distancing more",
-       y = "Average Social Distancing Score",
-       x = "Change in Cases/Capita from 3/29 to 4/11",
+  theme(legend.position = "none") +
+  labs(title = "States who Distanced More Initially See Greatest Reduction in Rate of Spread",
+       x = "Social Distancing Score on 3/29",
+       y = "%Change in Rate of Spread",
        color = NULL)
   
 USStates %>%
   ggplot() +
-  geom_smooth(aes(x = rate, y = social_dist_score),
-              method = "lm", se = T) +
-  geom_point(aes(x = rate, y = social_dist_score, color = cluster_k_means)) +
+  geom_smooth(aes(x = rate, y = social_dist_score, color = governor),
+              method = "lm", se = F) +
+  geom_point(aes(x = rate, y = social_dist_score, color = governor)) +
   geom_text_repel(aes(x = rate, y = social_dist_score, label = ifelse(is_outlier(rate) | is_outlier(social_dist_score), state, "")),
                   family = hrbrthemes::font_an) +
-  facet_wrap(.~ as.factor(date), scales = "free_x") +
-  scale_y_continuous(limits = c(-11, 15)) +
+  facet_wrap(.~ cluster_pop, scales = "free_x") +
   theme_ipsum() +
   theme(legend.position = c(0.9, 0.15)) +
   labs(title = "States with more cases are distancing more",
@@ -160,39 +187,32 @@ USStates %>%
        x = "Rate of Covid-19 Spread",
        color = NULL)
 
-USStates_Wide %>%
+# Look at how rate of week prior changes distancing of next week
+USStates %>%
+  mutate(cluster_pop = case_when(
+    cluster_pop == 1 ~ "Cluster 1: GA, HI, IN, KY, LA, MI, NH, NC, SC, TX, TN, VA, WA",
+    cluster_pop == 2 ~ "Cluster 2: CA, DE, FL, IL, MD, OH, PA",
+    cluster_pop == 3 ~ "Cluster 3: AL, AK, AR, CO, ID, IA, KS, ME, MN, MS, MO, MT, NE, NV, NM, ND, OK, OR, SD, UT, VT, WV, WI, WY",
+    cluster_pop == 4 ~ "Cluster 4: CT, MA, NJ, NY, RI",
+    TRUE ~ as.character(cluster_pop))) %>%
+  group_by(state) %>%
+  mutate(distance_next_week = lead(social_dist_score, order_by = date)) %>%
+  select(state, date, rate, cases_per_capita, social_dist_score, distance_next_week, cluster_pop) %>%
+  filter(date != "2020-04-11") %>%
   ggplot() +
-  geom_smooth(aes(x = `rate_2020-03-29`, y = `social_dist_score_2020-04-05`),
-              method = "lm", se = T) +
-  geom_point(aes(x = `rate_2020-03-29`, y = `social_dist_score_2020-04-05`), color = "blue") +
-  geom_smooth(aes(x = `rate_2020-04-05`, y = `social_dist_score_2020-04-11`),
-              method = "lm", se = T) +
-  geom_point(aes(x = `rate_2020-04-05`, y = `social_dist_score_2020-04-11`), color = "red") +
+  geom_smooth(aes(x = cases_per_capita, y = distance_next_week, color = as.factor(date)),
+              method = "lm") +
+  geom_point(aes(x = cases_per_capita, y = distance_next_week, color = as.factor(date))) +
+  facet_wrap(.~ cluster_pop, scales = "free_x") +
+  scale_color_manual(values = c("#a90010", "#1a4ba9")) +
   theme_ipsum() +
   theme(legend.position = c(0.9, 0.15)) +
-  labs(title = "Previous rate of spread influence on social distancing",
-       y = "Social Distancing Score 4/05/20",
-       x = "Growth Rate of Covid-19 3/29/20",
-       color = NULL)
-
-summary(lm(`social_dist_score_2020-04-11` ~ `rate_2020-03-29` + `rate_2020-04-05` + `rate_2020-04-11`, 
-           data = USStates_Wide))
+  labs(title = "Cases/Capita Week Prior Motivates Future Social Distancing",
+       x = "Cases/Capita Week Prior",
+       y = "Social Distancing Score Next Week",
+       color = "Date")
 
 
-
-a<-USStates %>%
-  filter(date != "2020-04-11") %>%
-  select(state, date, rate) %>%
-  pivot_longer(cols = rate, names_to = "rate", values_to = "rate") %>%
-  bind_cols(USStates %>%
-              filter(date != "2020-03-29") %>%
-              select(state, date, social_dist_score) %>%
-              pivot_longer(cols = social_dist_score))
-
-
-USStates %>%
-  ggplot() +
-  geom_point(aes(x = rate, y = social_dist_score, color = as.factor(date)))
 
 USStates_Wide %>%
   ggplot() +
@@ -200,7 +220,31 @@ USStates_Wide %>%
   geom_smooth(aes(x = avg_response_time, y = avg_dist_score, color = governor),
               method = "lm", se = T)
 
+to_model <- USStates_Wide %>%
+  select(`social_dist_score_2020-03-29`, emergency_declaration, date_of_1st_case, date_of_stay_at_home_order,
+         date_of_1st_death, governor, state_mandated_school_closures, cluster_pop) %>%
+  mutate_if(is.character, factor) %>%
+  mutate(date_of_stay_at_home_order = case_when(
+    is.na(date_of_stay_at_home_order) ~ Sys.Date(),
+    TRUE ~ date_of_stay_at_home_order))
+
+model1 <- lm(`social_dist_score_2020-03-29` ~., data = to_model)
+
+model_step <- step(model1, direction = "both")
+summary(model_step)
+
 USStates_Wide %>%
   ggplot() +
-  geom_boxplot(aes(x = ))
+  geom_smooth(aes(x = avg_response_time, y = avg_dist_score, color = governor),
+              method = "lm") +
+  geom_point(aes(x = avg_response_time, y = avg_dist_score, color = governor)) +
+  scale_color_manual(values = c("#1a4ba9", "#a90010")) +
+  theme_ipsum() +
+  theme(legend.position = c(0.9, 0.9)) +
+  labs(title = "Earlier Stay at Home Orders Increase Social Distancing",
+       subtitle = "and Democratic governors were more quick to enact orders",
+       x = "Date of Stay at Home Order",
+       y = "Social Distancing Score 3/29",
+       color = "Governor")
+
 
