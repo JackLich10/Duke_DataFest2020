@@ -1,6 +1,7 @@
 source("R/Data_Cleaning_Manip.R")
 
 library(gt)
+library(gtsummary)
 
 up_arrow <- "<span style=\"color:#1a4ba9\">&#9650;</span>"
 down_arrow <- "<span style=\"color:#a90010\">&#9660;</span>"
@@ -95,11 +96,34 @@ USStates_Wide %>%
              `social_dist_score_2020-04-11` = "Final SDS", diff_cases_capita = "Cases/Capita", diff_rate = "Rate of Spread") %>%
   tab_source_note(source_note = md("All values are averages within each cluster. Initial/Final refers to data from 3/29 and 4/11, respectively."))
 
-USStates_Wide %>%
-  mutate(diff_cases_capita = (`cases_per_capita_2020-04-11` - `cases_per_capita_2020-03-29`)/`cases_per_capita_2020-03-29`,
-         diff_rate = (`rate_2020-04-11` - `rate_2020-03-29`)/`rate_2020-03-29`) %>%
-  select(diff_cases_capita) %>% view()
 
-USStates %>%
-  filter(cluster_pop == 4) %>%view()
+# build simple linear model
+to_model <- USStates_Wide %>%
+  select(`social_dist_score_2020-03-29`, emergency_declaration, date_of_1st_case, date_of_stay_at_home_order,
+         date_of_1st_death, governor, state_mandated_school_closures, cluster_pop) %>%
+  mutate_if(is.character, factor) %>%
+  mutate(date_of_stay_at_home_order = case_when(
+    is.na(date_of_stay_at_home_order) ~ Sys.Date(),
+    TRUE ~ date_of_stay_at_home_order))
+
+model1 <- lm(`social_dist_score_2020-03-29` ~., data = to_model)
+
+model_step <- step(model1, direction = "both")
+summary(model_step)
   
+tbl_regression(model_step, label = list(date_of_1st_case ~ "First Case",
+                                        date_of_stay_at_home_order ~ "Stay at Home Order",
+                                        governor ~ "Governor",
+                                        cluster_pop ~ "Cluster")) %>%
+  add_global_p() %>%
+  bold_p(t = 0.05) %>%
+  bold_labels() %>%
+  italicize_levels() %>%
+  as_gt() %>%
+  tab_source_note(source_note = md("Linear regression predicting Social Distancing Scores")) %>%
+  tab_source_note(source_note = md("Multiple R^2: 0.4766"))
+  
+  
+
+
+

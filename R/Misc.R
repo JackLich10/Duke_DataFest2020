@@ -220,19 +220,6 @@ USStates_Wide %>%
   geom_smooth(aes(x = avg_response_time, y = avg_dist_score, color = governor),
               method = "lm", se = T)
 
-to_model <- USStates_Wide %>%
-  select(`social_dist_score_2020-03-29`, emergency_declaration, date_of_1st_case, date_of_stay_at_home_order,
-         date_of_1st_death, governor, state_mandated_school_closures, cluster_pop) %>%
-  mutate_if(is.character, factor) %>%
-  mutate(date_of_stay_at_home_order = case_when(
-    is.na(date_of_stay_at_home_order) ~ Sys.Date(),
-    TRUE ~ date_of_stay_at_home_order))
-
-model1 <- lm(`social_dist_score_2020-03-29` ~., data = to_model)
-
-model_step <- step(model1, direction = "both")
-summary(model_step)
-
 USStates_Wide %>%
   ggplot() +
   geom_smooth(aes(x = avg_response_time, y = avg_dist_score, color = governor),
