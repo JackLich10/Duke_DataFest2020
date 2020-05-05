@@ -2,6 +2,8 @@
 
 2020 Duke DataFest Competition Repo
 
+Winner of Best Visualizations! Check out the finished product as well as the other winners at https://www2.stat.duke.edu/datafest-covid19/winners.html.
+
 Data Dictionary:
 
 Number of Observations: 50
